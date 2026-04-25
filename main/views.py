@@ -1,4 +1,7 @@
 from django.shortcuts import render
 
 def navbar(request):
-    return render(request, "navbar.html")
+    return render(request, "base.html")
+
+def register(request):
+    return render(request, "register.html")
