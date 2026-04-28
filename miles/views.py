@@ -1,3 +1,5 @@
 from django.shortcuts import render
 
-# Create your views here.
+
+def claim_miles(request):
+    return render(request, "miles/claim_miles.html")
