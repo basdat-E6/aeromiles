@@ -23,7 +23,7 @@
                 {% if not user.is_authenticated %}
                 <div class="flex items-center ml-auto">
                     <div class="flex items-center border-l border-gray-700 pl-4 text-gray-400 hover:text-blue-400">
-                        <a href="/login" class="font-medium px-2 flex items-center gap-1 rounded-lg py-1
+                        <a href="{% url 'authentication:login' %}" class="font-medium px-2 flex items-center gap-1 rounded-lg py-1
                             {% if 'login' in request.path %} bg-[#0a2540] text-blue-400 {% else %} text-gray-300 hover:text-blue-400 {% endif %}">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -34,7 +34,7 @@
                     </div>
 
                     <div class="flex items-center border-gray-700 pl-4 text-gray-400 hover:text-blue-400">
-                        <a href="/register" class="font-medium px-2 border-gray-700 flex items-center gap-1 rounded-lg py-1
+                        <a href="{% url 'authentication:register' %}" class="font-medium px-2 border-gray-700 flex items-center gap-1 rounded-lg py-1
                             {% if 'register' in request.path %} bg-[#0a2540] text-blue-400 {% else %} text-gray-300 hover:text-blue-400 {% endif %}">
                             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

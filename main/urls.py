@@ -1,10 +1,8 @@
 from django.urls import path
-from main.views import navbar, register, login
+from main.views import navbar
 
-app_name = 'main'
+app_name = "main"
 
 urlpatterns = [
-    path('', navbar, name='navbar'),
-    path('register/', register, name='register'),
-    path('login/', login, name='login'),
+    path("", navbar, name="navbar"),
 ]
