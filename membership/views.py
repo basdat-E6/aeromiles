@@ -137,3 +137,84 @@ def kelola_member(request):
         print(f"Error load kelola member: {e}")
 
     return render(request, 'kelola_member.html', context)
+
+def identitas(request):
+    user_email = request.session.get('user_email')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'add':
+            nomor = request.POST.get('nomor')
+            jenis = request.POST.get('jenis')
+            negara = request.POST.get('negara_penerbit')
+            tgl_terbit = request.POST.get('tanggal_terbit')
+            tgl_habis = request.POST.get('tanggal_habis')
+
+            try:
+                settings.SUPABASE_CLIENT.table('identitas').insert({
+                    "nomor": nomor,
+                    "jenis": jenis,
+                    "negara_penerbit": negara,
+                    "tanggal_terbit": tgl_terbit,
+                    "tanggal_habis": tgl_habis,
+                    "email_member": user_email
+                }).execute()
+                messages.success(request, "Dokumen identitas berhasil ditambahkan!")
+            except Exception as e:
+                print(f"Error Add Identitas: {e}")
+                messages.error(request, "Gagal! Nomor dokumen mungkin sudah terdaftar di sistem.")
+
+        elif action == 'edit':
+            nomor = request.POST.get('nomor_edit')
+            jenis = request.POST.get('jenis_edit')
+            negara = request.POST.get('negara_penerbit_edit')
+            tgl_terbit = request.POST.get('tanggal_terbit_edit')
+            tgl_habis = request.POST.get('tanggal_habis_edit')
+
+            try:
+                settings.SUPABASE_CLIENT.table('identitas').update({
+                    "jenis": jenis,
+                    "negara_penerbit": negara,
+                    "tanggal_terbit": tgl_terbit,
+                    "tanggal_habis": tgl_habis
+                }).eq('nomor', nomor).eq('email_member', user_email).execute()
+                
+                messages.success(request, "Data identitas berhasil diperbarui!")
+            except Exception as e:
+                print(f"Error Edit Identitas: {e}")
+                messages.error(request, "Gagal memperbarui identitas.")
+
+        elif action == 'delete':
+            nomor = request.POST.get('nomor_delete')
+            try:
+                settings.SUPABASE_CLIENT.table('identitas').delete() \
+                    .eq('nomor', nomor).eq('email_member', user_email).execute()
+                messages.success(request, "Identitas berhasil dihapus!")
+            except Exception as e:
+                print(f"Error Delete Identitas: {e}")
+                messages.error(request, "Gagal menghapus identitas.")
+
+        return redirect('membership:identitas')
+
+    context = {}
+    try:
+        id_res = settings.SUPABASE_CLIENT.table('identitas').select('*').eq('email_member', user_email).execute()
+        
+        identitas_list = id_res.data
+        hari_ini = date.today()
+
+        for doc in identitas_list:
+            tgl_habis_obj = date.fromisoformat(doc['tanggal_habis'])
+            
+            if tgl_habis_obj < hari_ini:
+                doc['status'] = 'Kedaluwarsa'
+            else:
+                doc['status'] = 'Aktif'
+
+        context['identitas_list'] = identitas_list
+
+    except Exception as e:
+        print(f"Error load identitas: {e}")
+
+    return render(request, 'identitas.html', context)
