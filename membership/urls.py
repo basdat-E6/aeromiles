@@ -1,7 +1,9 @@
 from django.urls import path
 
-from . import views
+from .views import kelola_member
 
 app_name = "membership"
 
-urlpatterns = []
+urlpatterns = [
+    path("kelola-member/", kelola_member, name="kelola_member"),
+]

@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-900">Kelola Member</h1>
+            <button onclick="openModal('modalAdd')" class="bg-[#0a2540] text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-900 transition-colors flex items-center gap-2">
+                <span>+</span> Tambah Member
+            </button>
+        </div>
+
+        <div class="p-4 border-b border-gray-200 flex gap-3 items-center drop-shadow-xs">
+            <form method="GET" class="flex-1 flex gap-3 items-center" id="filterForm">
+                
+                <input type="text" name="search" id="searchInput" value="{{ search_query }}" 
+                    placeholder="Cari nama, email, nomor member..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm">
+
+                <div class="relative drop-shadow-xs">
+                    <select name="tier" id="tierSelect"
+                        class="appearance-none px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium bg-white cursor-pointer">
+                        <option value="">Semua Tier</option>
+                        {% for t in tier_list %}
+                            <option value="{{ t.id_tier }}" {% if tier_filter == t.id_tier %}selected{% endif %}>{{ t.nama }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+            <div class="overflow-x-auto drop-shadow-xs">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
+                            <th class="p-4 font-bold">No. Member</th>
+                            <th class="p-4 font-bold">Nama</th>
+                            <th class="p-4 font-bold">Email</th>
+                            <th class="p-4 font-bold">Tier</th>
+                            <th class="p-4 font-bold">Total Miles</th>
+                            <th class="p-4 font-bold">Bergabung</th>
+                            <th class="p-4 font-bold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-sm">
+                        {% for m in members %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="p-4 font-bold text-gray-800">{{ m.nomor_member }}</td>
+                            <td class="p-4 font-medium text-gray-800">{{ m.nama_lengkap }}</td>
+                            <td class="p-4 text-gray-500">{{ m.email }}</td>
+                            <td class="p-4">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold
+                                    {% if m.tier_nama == 'Classic' %} bg-orange-100 text-orange-800
+                                    {% elif m.tier_nama == 'Silver' %} bg-slate-200 text-slate-800
+                                    {% elif m.tier_nama == 'Gold' %} bg-yellow-400 text-yellow-900
+                                    {% elif m.tier_nama == 'Platinum' %} bg-sky-200 text-sky-900
+                                    {% else %} bg-gray-200 text-gray-800 {% endif %}">
+                                    {{ m.tier_nama }}
+                                </span>
+                            </td>
+                            <td class="p-4 font-medium text-gray-700">{{ m.total_miles }}</td>
+                            <td class="p-4 text-gray-500">{{ m.tanggal_gabung }}</td>
+                            <td class="p-4 text-center space-x-2">
+                                <button onclick="bukaModalEdit(
+                                    '{{ m.email }}', '{{ m.raw_salutation }}', '{{ m.raw_fmn }}', '{{ m.raw_last }}', 
+                                    '{{ m.raw_country }}', '{{ m.raw_phone }}', '{{ m.raw_kwn }}', '{{ m.raw_dob }}', '{{ m.id_tier }}')" 
+                                    class="text-gray-500 hover:text-gray-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" >
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z" fill="currentColor"/>
+                                    </svg>                      
+                                </button>
+                                <button onclick="bukaModalDelete('{{ m.email }}')" 
+                                    class="text-red-500 hover:text-red-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" >
+                                        <path d="M18 6L17.1991 18.0129C17.129 19.065 17.0939 19.5911 16.8667 19.99C16.6666 20.3412 16.3648 20.6235 16.0011 20.7998C15.588 21 15.0607 21 14.0062 21H9.99377C8.93927 21 8.41202 21 7.99889 20.7998C7.63517 20.6235 7.33339 20.3412 7.13332 19.99C6.90607 19.5911 6.871 19.065 6.80086 18.0129L6 6M4 6H20M16 6L15.7294 5.18807C15.4671 4.40125 15.3359 4.00784 15.0927 3.71698C14.8779 3.46013 14.6021 3.26132 14.2905 3.13878C13.9376 3 13.523 3 12.6936 3H11.3064C10.477 3 10.0624 3 9.70951 3.13878C9.39792 3.26132 9.12208 3.46013 8.90729 3.71698C8.66405 4.00784 8.53292 4.40125 8.27064 5.18807L8 6M14 10V17M10 10V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-gray-500">Tidak ada data member yang ditemukan.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="modalAdd" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Tambah Member Baru</h3>
+            <button onclick="closeModal('modalAdd')" class="text-gray-400 hover:text-gray-500 text-xl font-bold">&times;</button>
+        </div>
+        <form method="POST" action="{% url 'membership:kelola_member' %}" class="p-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Email</label><input type="email" name="email" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Password</label><input type="password" name="password" required class="w-full px-3 py-2 border rounded-lg"></div>
+                
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
+                    <select name="salutation" class="w-full px-3 py-2 border rounded-lg"><option>Mr.</option><option>Mrs.</option><option>Ms.</option></select>
+                </div>
+                <div class="hidden sm:block"></div> <div><label class="block text-xs font-medium text-gray-700 mb-1">Nama Depan & Tengah</label><input type="text" name="nama_depan" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Nama Belakang</label><input type="text" name="nama_belakang" required class="w-full px-3 py-2 border rounded-lg"></div>
+                
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Country Code</label><input type="text" name="country_code" value="+62" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Nomor HP</label><input type="text" name="nomor_hp" required class="w-full px-3 py-2 border rounded-lg"></div>
+                
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Lahir</label><input type="date" name="tanggal_lahir" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Kewarganegaraan</label>
+                    <select name="kewarganegaraan" class="w-full px-3 py-2 border rounded-lg"><option>Indonesia</option><option>Malaysia</option><option>Singapura</option></select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3"><button type="button" onclick="closeModal('modalAdd')" class="px-4 py-2 border rounded-lg font-medium text-gray-700">Batal</button><button type="submit" class="bg-[#0a2540] text-white px-4 py-2 rounded-lg font-medium">Simpan</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEdit" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Edit Member</h3>
+            <button onclick="closeModal('modalEdit')" class="text-gray-400 hover:text-gray-500 text-xl font-bold">&times;</button>
+        </div>
+        <form method="POST" action="{% url 'membership:kelola_member' %}" class="p-6">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="email_edit" id="edit_email_hidden"> <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
+                    <select name="salutation_edit" id="edit_salutation" class="w-full px-3 py-2 border rounded-lg"><option>Mr.</option><option>Mrs.</option><option>Ms.</option></select>
+                </div>
+                <div class="hidden sm:block"></div> 
+
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Nama Depan & Tengah</label><input type="text" name="nama_depan_edit" id="edit_fmn" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Nama Belakang</label><input type="text" name="nama_belakang_edit" id="edit_last" required class="w-full px-3 py-2 border rounded-lg"></div>
+                
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Country Code</label><input type="text" name="country_code_edit" id="edit_country" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Nomor HP</label><input type="text" name="nomor_hp_edit" id="edit_phone" required class="w-full px-3 py-2 border rounded-lg"></div>
+                
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Lahir</label><input type="date" name="tanggal_lahir_edit" id="edit_dob" required class="w-full px-3 py-2 border rounded-lg"></div>
+                
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Kewarganegaraan</label>
+                    <select name="kewarganegaraan_edit" id="edit_kwn" class="w-full px-3 py-2 border rounded-lg"><option>Indonesia</option><option>Malaysia</option><option>Singapura</option></select>
+                </div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tier</label>
+                    <select name="tier_edit" id="edit_tier" class="w-full px-3 py-2 border rounded-lg">
+                        {% for t in tier_list %}
+                            <option value="{{ t.id_tier }}">{{ t.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3"><button type="button" onclick="closeModal('modalEdit')" class="px-4 py-2 border rounded-lg font-medium text-gray-700">Batal</button><button type="submit" class="bg-[#0a2540] text-white px-4 py-2 rounded-lg font-medium">Simpan</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="modalDelete" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Hapus Member?</h3>
+        <p class="text-sm text-gray-500 mb-6">Semua data terkait (Identitas, Klaim, Transfer, Redeem) akan ikut terhapus. Tindakan ini tidak dapat dibatalkan.</p>
+        
+        <form method="POST" action="{% url 'membership:kelola_member' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="email_delete" id="delete_email_hidden">
+            
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal('modalDelete')" class="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50">Batal</button>
+                <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const tierSelect = document.getElementById('tierSelect');
+    const tierHidden = document.getElementById('tierHidden');
+    let debounceTimer;
+    function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
+    function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+
+    function bukaModalEdit(email, salutation, fmn, last, country, phone, kwn, dob, tier) {
+        document.getElementById('edit_email_hidden').value = email;
+        document.getElementById('edit_salutation').value = salutation;
+        document.getElementById('edit_fmn').value = fmn;
+        document.getElementById('edit_last').value = last;
+        document.getElementById('edit_country').value = country;
+        document.getElementById('edit_phone').value = phone;
+        document.getElementById('edit_kwn').value = kwn;
+        document.getElementById('edit_dob').value = dob;
+        document.getElementById('edit_tier').value = tier;
+        openModal('modalEdit');
+    }
+
+    function bukaModalDelete(email) {
+        document.getElementById('delete_email_hidden').value = email;
+        openModal('modalDelete');
+    }
+
+    searchInput.focus();
+    const val = searchInput.value;
+    searchInput.value = '';
+    searchInput.value = val;
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            document.getElementById('filterForm').submit();
+        }, 400);
+    });
+
+    tierSelect.addEventListener('change', () => {
+        document.getElementById('filterForm').submit();
+    });
+</script>
+{% endblock %}
