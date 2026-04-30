@@ -1,5 +1,9 @@
 from django.shortcuts import render, redirect
 from django.conf import settings
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import MemberProfile
 
 
 def navbar(request):
@@ -125,3 +129,18 @@ def dashboard(request):
         print(f"Error fetching dashboard data: {e}")
 
     return render(request, 'dashboard.html', context)
+
+
+def profil_view(request):
+    if not request.session.get('user_email'):
+        return redirect('authentication:login')
+
+    email = request.session.get('user_email')
+
+    try:
+        res = settings.SUPABASE_CLIENT.table('pengguna').select('*').eq('email', email).execute()
+        profile = res.data[0]
+    except Exception:
+        profile = None
+
+    return render(request, 'profil.html', {'profile': profile})
