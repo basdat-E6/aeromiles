@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-900">Identitas Saya</h1>
+            <button onclick="openModal('modalAdd')" class="bg-[#0a2540] text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-900 transition-colors flex items-center gap-2 text-sm">
+                <span>+</span> Tambah Identitas
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200">
+                            <th class="p-4 font-bold">No. Dokumen</th>
+                            <th class="p-4 font-bold">Jenis</th>
+                            <th class="p-4 font-bold">Negara</th>
+                            <th class="p-4 font-bold">Terbit</th>
+                            <th class="p-4 font-bold">Habis</th>
+                            <th class="p-4 font-bold">Status</th>
+                            <th class="p-4 font-bold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-sm">
+                        {% for doc in identitas_list %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="p-4 font-bold text-gray-800">{{ doc.nomor }}</td>
+                            <td class="p-4 font-medium text-gray-700">{{ doc.jenis }}</td>
+                            <td class="p-4 text-gray-600">{{ doc.negara_penerbit }}</td>
+                            <td class="p-4 text-gray-500">{{ doc.tanggal_terbit }}</td>
+                            <td class="p-4 text-gray-500">{{ doc.tanggal_habis }}</td>
+                            <td class="p-4">
+                                {% if doc.status == 'Aktif' %}
+                                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">Aktif</span>
+                                {% else %}
+                                    <span class="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold">Kedaluwarsa</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-4 text-center space-x-3">
+                                <button onclick="bukaModalEdit('{{ doc.nomor }}', '{{ doc.jenis }}', '{{ doc.negara_penerbit }}', '{{ doc.tanggal_terbit }}', '{{ doc.tanggal_habis }}')" 
+                                    class="text-gray-500 hover:text-gray-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" >
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z" fill="currentColor"/>
+                                    </svg>
+                                </button>
+                                <button onclick="bukaModalDelete('{{ doc.nomor }}')" 
+                                    class="text-red-500 hover:text-red-800">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" >
+                                        <path d="M18 6L17.1991 18.0129C17.129 19.065 17.0939 19.5911 16.8667 19.99C16.6666 20.3412 16.3648 20.6235 16.0011 20.7998C15.588 21 15.0607 21 14.0062 21H9.99377C8.93927 21 8.41202 21 7.99889 20.7998C7.63517 20.6235 7.33339 20.3412 7.13332 19.99C6.90607 19.5911 6.871 19.065 6.80086 18.0129L6 6M4 6H20M16 6L15.7294 5.18807C15.4671 4.40125 15.3359 4.00784 15.0927 3.71698C14.8779 3.46013 14.6021 3.26132 14.2905 3.13878C13.9376 3 13.523 3 12.6936 3H11.3064C10.477 3 10.0624 3 9.70951 3.13878C9.39792 3.26132 9.12208 3.46013 8.90729 3.71698C8.66405 4.00784 8.53292 4.40125 8.27064 5.18807L8 6M14 10V17M10 10V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-gray-500">Belum ada dokumen identitas yang ditambahkan.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="modalAdd" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Tambah Identitas Baru</h3>
+            <button onclick="closeModal('modalAdd')" class="text-gray-400 hover:text-gray-500">&times;</button>
+        </div>
+        <form method="POST" action="{% url 'membership:identitas' %}" class="p-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            
+            <div><label class="block text-xs font-medium text-gray-700 mb-1">Nomor Dokumen</label><input type="text" name="nomor" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500"></div>
+            <div><label class="block text-xs font-medium text-gray-700 mb-1">Jenis Dokumen</label>
+                <select name="jenis" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500"><option value="KTP">KTP</option><option value="SIM">SIM</option><option value="Paspor">Paspor</option></select>
+            </div>
+            <div><label class="block text-xs font-medium text-gray-700 mb-1">Negara Penerbit</label>
+                <select name="negara_penerbit" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500"><option value="Indonesia">Indonesia</option><option value="Malaysia">Malaysia</option><option value="Singapura">Singapura</option></select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Terbit</label><input type="date" name="tanggal_terbit" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Habis</label><input type="date" name="tanggal_habis" required class="w-full px-3 py-2 border rounded-lg"></div>
+            </div>
+            <div class="pt-4 flex justify-end"><button type="submit" class="bg-[#0a2540] text-white px-6 py-2 rounded-lg font-medium w-full sm:w-auto">Simpan</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="modalEdit" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b border-gray-100">
+            <h3 class="text-lg font-bold text-gray-900">Edit Identitas</h3>
+            <button onclick="closeModal('modalEdit')" class="text-gray-400 hover:text-gray-500">&times;</button>
+        </div>
+        <form method="POST" action="{% url 'membership:identitas' %}" class="p-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="nomor_edit" id="edit_nomor_hidden"> <div><label class="block text-xs font-medium text-gray-700 mb-1">Nomor Dokumen</label>
+                <input type="text" id="edit_nomor_display" disabled class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed">
+            </div>
+
+            <div><label class="block text-xs font-medium text-gray-700 mb-1">Jenis Dokumen</label>
+                <select name="jenis_edit" id="edit_jenis" class="w-full px-3 py-2 border rounded-lg"><option value="KTP">KTP</option><option value="SIM">SIM</option><option value="Paspor">Paspor</option></select>
+            </div>
+            <div><label class="block text-xs font-medium text-gray-700 mb-1">Negara Penerbit</label>
+                <select name="negara_penerbit_edit" id="edit_negara" class="w-full px-3 py-2 border rounded-lg"><option value="Indonesia">Indonesia</option><option value="Malaysia">Malaysia</option><option value="Singapura">Singapura</option></select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Terbit</label><input type="date" name="tanggal_terbit_edit" id="edit_terbit" required class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Habis</label><input type="date" name="tanggal_habis_edit" id="edit_habis" required class="w-full px-3 py-2 border rounded-lg"></div>
+            </div>
+            <div class="pt-4 flex justify-end"><button type="submit" class="bg-[#0a2540] text-white px-6 py-2 rounded-lg font-medium w-full sm:w-auto">Simpan Perubahan</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="modalDelete" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75
+ flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Hapus Identitas?</h3>
+        <p class="text-sm text-gray-500 mb-6">Tindakan ini tidak dapat dibatalkan.</p>
+        
+        <form method="POST" action="{% url 'membership:identitas' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="nomor_delete" id="delete_no_dok_hidden">
+            
+            <div class="flex justify-center gap-3">
+                <button type="button" onclick="closeModal('modalDelete')" class="px-4 py-2 border rounded-lg font-medium text-gray-700">Batal</button>
+                <button type="submit" class="bg-red-600 text-white hover:bg-red-800 px-4 py-2 rounded-lg font-medium">Hapus</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function bukaModalEdit(no_dok, jenis, negara, terbit, habis) {
+        // Isi input hidden dan display
+        document.getElementById('edit_nomor_hidden').value = no_dok;
+        document.getElementById('edit_nomor_display').value = no_dok;
+        
+        document.getElementById('edit_jenis').value = jenis;
+        document.getElementById('edit_negara').value = negara;
+        document.getElementById('edit_terbit').value = terbit;
+        document.getElementById('edit_habis').value = habis;
+        openModal('modalEdit');
+    }
+
+    function bukaModalDelete(no_dok) {
+        document.getElementById('delete_no_dok_hidden').value = no_dok;
+        openModal('modalDelete');
+    }
+</script>
+{% endblock %}
