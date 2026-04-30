@@ -6,8 +6,8 @@ from django.contrib import messages
 from .models import MemberProfile
 
 
-def navbar(request):
-    return render(request, "base.html")
+def landing(request):
+    return render(request, "landing.html")
 
 
 def dashboard(request):
