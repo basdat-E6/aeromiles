@@ -15,4 +15,10 @@ urlpatterns = [
     path('mitra/create/', views.mitra_create, name='mitra_create'),
     path('mitra/update/<str:email>/', views.mitra_update, name='mitra_update'),
     path('mitra/delete/<str:email>/', views.mitra_delete, name='mitra_delete'),
+
+    path('katalog/', views.katalog, name='katalog'),
+    path('beli_package/', views.beli_package, name='beli_package'),
+    path('info_tier/', views.info_tier, name='info_tier'),
+    path("laporan/", views.laporan_transaksi, name="laporan_transaksi"),
+
 ]

@@ -115,3 +115,16 @@ def mitra_delete(request, email):
         return redirect('mitra_list')
 
     return render(request, 'mitra/delete.html', {'mitra': mitra})
+
+def katalog(request):
+     return render(request, 'rewards/katalog.html')
+
+def beli_package(request):
+     return render(request, 'rewards/beli_package.html')
+
+def info_tier(request):
+     return render(request, 'rewards/info_tier.html')
+
+def laporan_transaksi(request):
+    return render(request, 'rewards/laporan_transaksi.html')
+
