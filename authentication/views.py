@@ -78,7 +78,7 @@ def login(request):
             user_check = settings.SUPABASE_CLIENT.table('pengguna').select('*').eq('email', email).execute()
 
             if len(user_check.data) == 0:
-                messages.error(request, "Email tidak terdaftar.")
+                messages.error(request, "Email atau password salah, silakan coba lagi.")
                 return redirect('authentication:login')
 
             user_data = user_check.data[0]
@@ -112,7 +112,7 @@ def login(request):
 
                 return redirect('main:dashboard')
             else:
-                messages.error(request, "Password salah.")
+                messages.error(request, "Email atau password salah, silakan coba lagi.")
                 return redirect('authentication:login')
 
         except Exception as e:
