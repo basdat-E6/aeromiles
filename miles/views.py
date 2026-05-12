@@ -1,4 +1,5 @@
 import datetime
+from pyexpat.errors import messages
 from django.shortcuts import render, redirect
 from django.conf import settings
 
@@ -184,99 +185,70 @@ def reject_claim(request, claim_id):
 
     return redirect("miles:claim_miles")
 
-
 def transfer_miles(request):
     user_email = request.session.get("user_email")
     if not user_email:
-        return redirect("login_view")
+        return redirect("authentication:login") 
 
-    # LOGIKA POST: Buat transfer baru
+    # ==========================================
     if request.method == "POST":
         email_penerima = request.POST.get("email_penerima", "").strip().lower()
         jumlah = request.POST.get("jumlah_miles")
         catatan = request.POST.get("catatan", "").strip() or None
 
-        # Validasi: tidak boleh transfer ke diri sendiri
         if email_penerima == user_email:
+            messages.error(request, "Tidak bisa transfer ke akun sendiri.")
             return redirect("miles:transfer_miles")
 
         try:
             jumlah = int(jumlah)
         except (ValueError, TypeError):
+            messages.error(request, "Jumlah miles tidak valid.")
             return redirect("miles:transfer_miles")
 
-        # Validasi: penerima harus terdaftar sebagai member
         try:
-            penerima_res = (
-                settings.SUPABASE_CLIENT.table("member")
-                .select("email")
-                .eq("email", email_penerima)
-                .execute()
-            )
+            penerima_res = settings.SUPABASE_CLIENT.table("member").select("email").eq("email", email_penerima).execute()
             if not penerima_res.data:
-                # Penerima tidak ditemukan, redirect dengan error
+                messages.error(request, "Email penerima tidak ditemukan di sistem.")
                 return redirect("miles:transfer_miles")
         except Exception as e:
             print(f"Gagal validasi penerima: {e}")
+            messages.error(request, "Terjadi kesalahan sistem saat memvalidasi penerima.")
             return redirect("miles:transfer_miles")
 
-        # Validasi: cek award miles pengirim mencukupi
         try:
-            pengirim_res = (
-                settings.SUPABASE_CLIENT.table("member")
-                .select("award_miles")
-                .eq("email", user_email)
-                .single()
-                .execute()
-            )
+            pengirim_res = settings.SUPABASE_CLIENT.table("member").select("award_miles").eq("email", user_email).single().execute()
             award_miles_pengirim = pengirim_res.data.get("award_miles", 0)
+            
             if award_miles_pengirim < jumlah:
+                messages.error(request, "Saldo Award Miles Anda tidak mencukupi untuk melakukan transfer ini!")
                 return redirect("miles:transfer_miles")
         except Exception as e:
             print(f"Gagal cek miles pengirim: {e}")
+            messages.error(request, "Terjadi kesalahan sistem saat mengecek saldo.")
             return redirect("miles:transfer_miles")
 
-        # Simpan transaksi transfer
         try:
             waktu_sekarang = datetime.datetime.now().isoformat()
-            settings.SUPABASE_CLIENT.table("transfer").insert(
-                {
-                    "email_member_1": user_email,
-                    "email_member_2": email_penerima,
-                    "jumlah": jumlah,
-                    "catatan": catatan,
-                    "timestamp": waktu_sekarang,
-                }
-            ).execute()
+            
+            settings.SUPABASE_CLIENT.table("transfer").insert({
+                "email_member_1": user_email,
+                "email_member_2": email_penerima,
+                "jumlah": jumlah,
+                "catatan": catatan,
+                "timestamp": waktu_sekarang,
+            }).execute()
 
-            # Kurangi miles pengirim
-            settings.SUPABASE_CLIENT.table("member").update(
-                {"award_miles": award_miles_pengirim - jumlah}
-            ).eq("email", user_email).execute()
-
-            # Tambah miles penerima
-            penerima_miles_res = (
-                settings.SUPABASE_CLIENT.table("member")
-                .select("award_miles")
-                .eq("email", email_penerima)
-                .single()
-                .execute()
-            )
-            award_miles_penerima = penerima_miles_res.data.get("award_miles", 0)
-            settings.SUPABASE_CLIENT.table("member").update(
-                {"award_miles": award_miles_penerima + jumlah}
-            ).eq("email", email_penerima).execute()
-
+            messages.success(request, f"Berhasil transfer {jumlah:,} miles ke {email_penerima}!")
         except Exception as e:
             print(f"Gagal transfer miles: {e}")
+            messages.error(request, "Terjadi kesalahan saat memproses transfer.")
 
         return redirect("miles:transfer_miles")
 
-    # LOGIKA GET: Fetch data untuk render halaman
     context = {"transfers": [], "award_miles": 0}
 
     try:
-        # Ambil award miles milik user
         member_res = (
             settings.SUPABASE_CLIENT.table("member")
             .select("award_miles")
@@ -290,7 +262,6 @@ def transfer_miles(request):
         print(f"Gagal ambil award miles: {e}")
 
     try:
-        # Ambil semua transfer yang melibatkan user (sebagai pengirim atau penerima)
         kirim_res = (
             settings.SUPABASE_CLIENT.table("transfer")
             .select("*")
@@ -340,7 +311,6 @@ def transfer_miles(request):
                 }
             )
 
-        # Urutkan dari terbaru
         transfers.sort(key=lambda x: x["timestamp"], reverse=True)
         context["transfers"] = transfers
 
