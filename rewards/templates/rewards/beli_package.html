@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 px-6 md:px-10 py-8">
+
+  <!-- Header -->
+  <h1 class="text-2xl font-bold text-gray-900">Beli Award Miles Package</h1>
+  <p class="text-sm text-gray-500 mt-1">
+    Award Miles saat ini: <span class="font-semibold text-gray-800">32,000</span>
+  </p>
+
+  <!-- Grid Kartu -->
+  <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- Card 1 -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
+      <div class="flex items-start justify-between mb-4">
+        <div style="color: #3b82f6;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z" />
+          </svg>
+        </div>
+        <span class="bg-gradient-to-t from-blue-900 to-blue-700 text-xs font-bold text-white px-2 py-1 rounded-full" >AMP-001</span>
+      </div>
+      <div>
+        <p class="text-3xl font-bold text-gray-900">1,000</p>
+        <p class="text-sm text-gray-500">Award Miles</p>
+        <p class="text-base font-semibold mt-2" style="color: #2563eb;">Rp 150,000</p>
+      </div>
+      <button onclick="bukaModal('1,000', 'Rp 150,000')"
+        class="mt-4 w-full text-white font-semibold text-sm py-2 rounded-lg"
+        style="background-color: #1e3a5f; cursor:pointer;"
+        onmouseover="this.style.backgroundColor='#2d5282'"
+        onmouseout="this.style.backgroundColor='#1e3a5f'">
+        Beli
+      </button>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
+      <div class="flex items-start justify-between mb-4">
+        <div style="color: #3b82f6;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z" />
+          </svg>
+        </div>
+        <span class="bg-gradient-to-t from-blue-900 to-blue-700 text-xs font-bold text-white px-2 py-1 rounded-full">AMP-002</span>
+      </div>
+      <div>
+        <p class="text-3xl font-bold text-gray-900">5,000</p>
+        <p class="text-sm text-gray-500">Award Miles</p>
+        <p class="text-base font-semibold mt-2" style="color: #2563eb;">Rp 650,000</p>
+      </div>
+      <button onclick="bukaModal('5,000', 'Rp 650,000')"
+        class="mt-4 w-full text-white font-semibold text-sm py-2 rounded-lg"
+        style="background-color: #1e3a5f; cursor:pointer;"
+        onmouseover="this.style.backgroundColor='#2d5282'"
+        onmouseout="this.style.backgroundColor='#1e3a5f'">
+        Beli
+      </button>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
+      <div class="flex items-start justify-between mb-4">
+        <div style="color: #3b82f6;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z" />
+          </svg>
+        </div>
+        <span class="bg-gradient-to-t from-blue-900 to-blue-700 text-xs font-bold text-white px-2 py-1 rounded-full" >AMP-003</span>
+      </div>
+      <div>
+        <p class="text-3xl font-bold text-gray-900">10,000</p>
+        <p class="text-sm text-gray-500">Award Miles</p>
+        <p class="text-base font-semibold mt-2" style="color: #2563eb;">Rp 1,200,000</p>
+      </div>
+      <button onclick="bukaModal( '10,000', 'Rp 1,200,000')"
+        class="mt-4 w-full text-white font-semibold text-sm py-2 rounded-lg"
+        style="background-color: #1e3a5f; cursor:pointer;"
+        onmouseover="this.style.backgroundColor='#2d5282'"
+        onmouseout="this.style.backgroundColor='#1e3a5f'">
+        Beli
+      </button>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex flex-col justify-between">
+      <div class="flex items-start justify-between mb-4">
+        <div style="color: #3b82f6;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6h13M7 13L5.4 5M10 21a1 1 0 100-2 1 1 0 000 2zm7 0a1 1 0 100-2 1 1 0 000 2z" />
+          </svg>
+        </div>
+        <span class="bg-gradient-to-t from-blue-900 to-blue-700 text-xs font-bold text-white px-2 py-1 rounded-full" >AMP-004</span>
+      </div>
+      <div>
+        <p class="text-3xl font-bold text-gray-900">25,000</p>
+        <p class="text-sm text-gray-500">Award Miles</p>
+        <p class="text-grey-500 text-base font-semibold mt-2" style="color: #2563eb;" >Rp 2,750,000</p>
+      </div>
+      <button onclick="bukaModal( '25,000', 'Rp 2,750,000')"
+        class="mt-4 w-full text-white font-semibold text-sm py-2 rounded-lg"
+        style="background-color: #1e3a5f; cursor:pointer;"
+        onmouseover="this.style.backgroundColor='#2d5282'"
+        onmouseout="this.style.backgroundColor='#1e3a5f'">
+        Beli
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Konfirmasi -->
+<div id="modal-beli"
+     style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center;">
+  <div onclick="tutupModal()"
+       style="position:absolute; inset:0; background:rgba(0,0,0,0.5);"></div>
+  <div style="position:relative; background:white; border-radius:1rem; padding:2rem; width:100%; max-width:28rem; margin:0 1rem; z-index:10; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+
+    <h2 style="font-size:1.25rem; font-weight:700; color:#111827;">Konfirmasi Pembelian</h2>
+    <button onclick="tutupModal()"
+    style="
+        position:absolute;
+        top:12px;
+        right:12px;
+        font-size:20px;
+        font-weight:bold;
+        color:#6b7280;
+        cursor:pointer;
+        background:none;
+        border:none;
+    "
+    onmouseover="this.style.color='#111827'"
+    onmouseout="this.style.color='#6b7280'">
+    &times;
+    </button>
+
+    <p style="margin-top:0.75rem; font-size:0.875rem; color:#4b5563; line-height:1.7;">
+      Anda akan membeli paket berikut: <br>
+      Award Miles: <strong id="modal-miles" style="color: rgb(0, 165, 33);">-</strong><br>
+      Harga: <strong id="modal-harga">-</strong>.
+    </p>
+
+    <p style="margin-top:0.5rem; font-size:0.8rem; color:#6b7280;">
+      Pastikan saldo kamu mencukupi sebelum melanjutkan.
+    </p>
+
+    <div style="margin-top:1.5rem; display:flex; justify-content:flex-end; gap:0.75rem;">
+      <button onclick="tutupModal()"
+        style="padding:0.5rem 1.25rem; border-radius:0.5rem; border:1px solid #d1d5db; font-size:0.875rem; color:#374151; cursor:pointer; background:white;">
+        Batal
+      </button>
+      <button onclick="konfirmasiBeli()"
+        style="padding:0.5rem 1.25rem; border-radius:0.5rem; font-size:0.875rem; font-weight:600; color:white; cursor:pointer; background:#1e3a5f; border:none;">
+        Konfirmasi Beli
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function bukaModal( miles, harga) {
+    document.getElementById('modal-miles').textContent = '+' + miles;
+    document.getElementById('modal-harga').textContent = harga;
+    document.getElementById('modal-beli').style.display = 'flex';
+  }
+
+  function tutupModal() {
+    document.getElementById('modal-beli').style.display = 'none';
+  }
+
+  function konfirmasiBeli() {
+    alert('Pembelian berhasil! (dummy)');
+    tutupModal();
+  }
+</script>
+
+{% endblock content %}
