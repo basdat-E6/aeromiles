@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-500 mt-1 font-semibold">Selamat datang, {{ pengguna.salutation }} {{ pengguna.first_mid_name }} {{ pengguna.last_name }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8 mb-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-6">Informasi Pribadi</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Nama Lengkap:</p>
+                    <p class="text-sm font-bold text-gray-800">{{ pengguna.salutation }} {{ pengguna.first_mid_name }} {{ pengguna.last_name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Email:</p>
+                    <p class="text-sm font-bold text-gray-800">{{ pengguna.email }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Telepon:</p>
+                    <p class="text-sm font-bold text-gray-800">{{ pengguna.country_code }} {{ pengguna.mobile_number }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Kewarganegaraan:</p>
+                    <p class="text-sm font-bold text-gray-800">{{ pengguna.kewarganegaraan }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Tanggal Lahir:</p>
+                    <p class="text-sm font-bold text-gray-800">{{ pengguna.tanggal_lahir }}</p>
+                </div>
+                {% if request.session.role == 'member' %}
+                <div>
+                    <p class="text-xs font-medium text-gray-500 mb-1">Tanggal Bergabung:</p>
+                    <p class="text-sm font-bold text-gray-800">{{ member.tanggal_gabung }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if request.session.role == 'member' %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-blue-50 p-3 rounded-xl text-blue-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500">Nomor Member</p>
+                    <p class="text-lg font-bold text-gray-800">{{ member.nomor_member }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+    
+                <div class="p-3 rounded-xl transition-colors
+                    {% if tier_nama == 'Classic' %} bg-orange-50 text-orange-600
+                    {% elif tier_nama == 'Silver' %} bg-slate-100 text-slate-600
+                    {% elif tier_nama == 'Gold' %} bg-yellow-50 text-yellow-600
+                    {% elif tier_nama == 'Platinum' %} bg-sky-50 text-sky-600
+                    {% else %} bg-gray-50 text-gray-600 {% endif %}">
+                    
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="9" r="7" stroke-width="2"/>
+                        <path d="M7.35111 15L6.71424 17.323C6.0859 19.6148 5.77173 20.7607 6.19097 21.3881C6.3379 21.6079 6.535 21.7844 6.76372 21.9008C7.41635 22.2331 8.42401 21.7081 10.4393 20.658C11.1099 20.3086 11.4452 20.1339 11.8014 20.0959C11.9335 20.0818 12.0665 20.0818 12.1986 20.0959C12.5548 20.1339 12.8901 20.3086 13.5607 20.658C15.576 21.7081 16.5837 22.2331 17.2363 21.9008C17.465 21.7844 17.6621 21.6079 17.809 21.3881C18.2283 20.7607 17.9141 19.6148 17.2858 17.323L16.6489 15" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                
+                <div>
+                    <p class="text-xs font-medium text-gray-500">Tier</p>
+                    <span class="inline-block mt-1 px-3 py-1 text-xs font-bold rounded-full transition-colors
+                        {% if tier_nama == 'Classic' %} bg-orange-100 text-orange-800
+                        {% elif tier_nama == 'Silver' %} bg-slate-200 text-slate-800
+                        {% elif tier_nama == 'Gold' %} bg-yellow-400 text-yellow-900
+                        {% elif tier_nama == 'Platinum' %} bg-sky-200 text-sky-900
+                        {% else %} bg-gray-200 text-gray-800 {% endif %}">
+                        {{ tier_nama }}
+                    </span>
+                </div>
+
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-sky-50 p-3 rounded-xl text-sky-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500">Total Miles</p>
+                    <p class="text-lg font-bold text-gray-800">{{ member.total_miles|default:"0" }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-green-50 p-3 rounded-xl text-green-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500">Award Miles</p>
+                    <p class="text-lg font-bold text-gray-800">{{ member.award_miles|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-8">
+            <h2 class="text-lg font-bold text-gray-800 mb-6">5 Transaksi Terbaru</h2>
+            
+            {% if transaksi_list %}
+                <div class="space-y-4">
+                    {% for transaksi in transaksi_list %}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs font-bold text-gray-600 bg-white px-3 py-1 rounded-lg border border-gray-200 w-20 text-center">{{ transaksi.jenis }}</span>
+                            <span class="text-sm text-gray-600 font-medium">{{ transaksi.tanggal }}</span>
+                        </div>
+                        
+                        <span class="text-sm font-bold {% if transaksi.is_negative %}text-red-500{% else %}text-green-500{% endif %}">
+                            {% if transaksi.is_negative %}-{% else %}+{% endif %}{{ transaksi.miles }} miles
+                        </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-gray-500 text-center py-4">Belum ada transaksi.</p>
+            {% endif %}
+        </div>
+
+        {% elif request.session.role == 'staf' %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-slate-100 p-3 rounded-xl text-slate-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400">ID Staf</p>
+                    <p class="text-sm font-bold text-gray-800">{{ staf.id_staf }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-blue-50 p-3 rounded-xl text-blue-500">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.8286 1.72758C19.618 1.37176 21.0449 0.981099 22.1457 2.08172C23.2466 3.18244 22.8558 4.60949 22.5 5.39885C22.2409 5.97353 21.8851 6.58498 21.4343 7.03586L18.3035 10.1667L20.75 19.9527C21.0686 21.2273 19.4017 22.0136 18.6208 20.957L13.9001 14.5701L11.0678 17.4024L10.4818 21.504C10.326 22.5944 8.90642 22.9164 8.29541 21.9999L5.86325 18.3517L1.89476 15.6042C0.960857 14.9577 1.36456 13.4958 2.49799 13.4203L6.85509 13.1298L9.65741 10.3275L3.27054 5.60674C2.21395 4.82579 3.00021 3.1589 4.27485 3.47756L14.0608 5.92406L17.1916 2.7933C17.6424 2.34244 18.254 1.98663 18.8286 1.72758ZM18.5828 4.23053L15.1548 7.65856C14.8567 7.95662 14.4241 8.07643 14.0152 7.9742L7.70352 6.39628L11.5932 9.27129C12.1832 9.70735 12.2473 10.5661 11.7285 11.0848L8.05676 14.7566C7.85123 14.9621 7.57808 15.086 7.28807 15.1054L4.91621 15.2635L7.31557 16.9246L8.79804 19.1483L9.12556 16.8556C9.16228 16.5986 9.28139 16.3604 9.46498 16.1768L13.1427 12.499C13.6615 11.9803 14.5202 12.0443 14.9562 12.6343L17.8312 16.524L16.2533 10.2123C16.1511 9.80342 16.2709 9.37083 16.569 9.07277L19.997 5.64474C20.0811 5.54456 20.4407 5.10051 20.6767 4.57691C20.9648 3.93787 20.8835 3.64788 20.7316 3.49604C20.5796 3.34411 20.2895 3.26286 19.6505 3.5509C19.127 3.78691 18.683 4.14648 18.5828 4.23053Z" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400">Maskapai</p>
+                    <p class="text-sm font-bold text-gray-800">{{ maskapai_nama }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-orange-50 p-3 rounded-xl text-orange-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400">Klaim Menunggu</p>
+                    <p class="text-lg font-bold text-gray-800">{{ klaim_menunggu|default:"0" }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-green-50 p-3 rounded-xl text-green-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400">Klaim Disetujui</p>
+                    <p class="text-lg font-bold text-gray-800">{{ klaim_disetujui|default:"0" }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex items-center gap-4">
+                <div class="bg-red-50 p-3 rounded-xl text-red-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-400">Klaim Ditolak</p>
+                    <p class="text-lg font-bold text-gray-800">{{ klaim_ditolak|default:"0" }}</p>
+                </div>
+            </div>
+
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
