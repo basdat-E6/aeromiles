@@ -1,5 +1,6 @@
 import datetime
 from pyexpat.errors import messages
+import re
 from django.shortcuts import render, redirect
 from django.conf import settings
 
@@ -188,9 +189,8 @@ def reject_claim(request, claim_id):
 def transfer_miles(request):
     user_email = request.session.get("user_email")
     if not user_email:
-        return redirect("authentication:login") 
+        return redirect("authentication:login")
 
-    # ==========================================
     if request.method == "POST":
         email_penerima = request.POST.get("email_penerima", "").strip().lower()
         jumlah = request.POST.get("jumlah_miles")
@@ -212,25 +212,12 @@ def transfer_miles(request):
                 messages.error(request, "Email penerima tidak ditemukan di sistem.")
                 return redirect("miles:transfer_miles")
         except Exception as e:
-            print(f"Gagal validasi penerima: {e}")
             messages.error(request, "Terjadi kesalahan sistem saat memvalidasi penerima.")
             return redirect("miles:transfer_miles")
 
         try:
-            pengirim_res = settings.SUPABASE_CLIENT.table("member").select("award_miles").eq("email", user_email).single().execute()
-            award_miles_pengirim = pengirim_res.data.get("award_miles", 0)
-            
-            if award_miles_pengirim < jumlah:
-                messages.error(request, "Saldo Award Miles Anda tidak mencukupi untuk melakukan transfer ini!")
-                return redirect("miles:transfer_miles")
-        except Exception as e:
-            print(f"Gagal cek miles pengirim: {e}")
-            messages.error(request, "Terjadi kesalahan sistem saat mengecek saldo.")
-            return redirect("miles:transfer_miles")
-
-        try:
             waktu_sekarang = datetime.datetime.now().isoformat()
-            
+        
             settings.SUPABASE_CLIENT.table("transfer").insert({
                 "email_member_1": user_email,
                 "email_member_2": email_penerima,
@@ -240,12 +227,23 @@ def transfer_miles(request):
             }).execute()
 
             messages.success(request, f"Berhasil transfer {jumlah:,} miles ke {email_penerima}!")
+            
         except Exception as e:
-            print(f"Gagal transfer miles: {e}")
-            messages.error(request, "Terjadi kesalahan saat memproses transfer.")
+            error_message = str(e)
+            
+            if "ERROR: Saldo award miles tidak mencukupi" in error_message:
+                match = re.search(r'(ERROR: Saldo award miles tidak mencukupi\..*?miles\.)', error_message)
+                if match:
+                    pesan_final = match.group(1)
+                    messages.error(request, pesan_final)
+                else:
+                    messages.error(request, "ERROR: Saldo award miles tidak mencukupi untuk melakukan transfer ini.")
+            else:
+                print(f"Gagal transfer miles: {e}")
+                messages.error(request, "Terjadi kesalahan saat memproses transfer.")
 
         return redirect("miles:transfer_miles")
-
+    
     context = {"transfers": [], "award_miles": 0}
 
     try:
