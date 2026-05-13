@@ -216,31 +216,27 @@ def transfer_miles(request):
             return redirect("miles:transfer_miles")
 
         try:
-            waktu_sekarang = datetime.datetime.now().isoformat()
-        
-            settings.SUPABASE_CLIENT.table("transfer").insert({
-                "email_member_1": user_email,
-                "email_member_2": email_penerima,
-                "jumlah": jumlah,
-                "catatan": catatan,
-                "timestamp": waktu_sekarang,
+            rpc_res = settings.SUPABASE_CLIENT.rpc("fungsi_proses_transfer_miles", {
+                "p_pengirim": user_email,
+                "p_penerima": email_penerima,
+                "p_jumlah": jumlah,
+                "p_catatan": catatan
             }).execute()
 
-            messages.success(request, f"Berhasil transfer {jumlah:,} miles ke {email_penerima}!")
+            pesan_sukses_dari_sql = rpc_res.data
+            messages.success(request, pesan_sukses_dari_sql)
             
         except Exception as e:
             error_message = str(e)
-            
             if "ERROR: Saldo award miles tidak mencukupi" in error_message:
                 match = re.search(r'(ERROR: Saldo award miles tidak mencukupi\..*?miles\.)', error_message)
                 if match:
-                    pesan_final = match.group(1)
-                    messages.error(request, pesan_final)
+                    messages.error(request, match.group(1))
                 else:
                     messages.error(request, "ERROR: Saldo award miles tidak mencukupi untuk melakukan transfer ini.")
             else:
                 print(f"Gagal transfer miles: {e}")
-                messages.error(request, "Terjadi kesalahan saat memproses transfer.")
+                messages.error(request, "Terjadi kesalahan sistem saat memproses transfer.")
 
         return redirect("miles:transfer_miles")
     
