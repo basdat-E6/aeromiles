@@ -20,9 +20,16 @@
 
         {% if messages %}
             {% for message in messages %}
-                <div class="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-xs font-bold text-center">
-                    {{ message }}
-                </div>
+                {% if message.tags == 'success' %}
+                    <div class="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-xs font-bold text-center">
+                        {{ message }}
+                    </div>
+                    
+                {% elif message.tags == 'error' %}
+                    <div class="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-xs font-bold text-center">
+                        {{ message }}
+                    </div>
+                {% endif %}
             {% endfor %}
         {% endif %}
 
