@@ -10,11 +10,17 @@ class Mitra(models.Model):
         return self.nama
 
 class Penyedia(models.Model):
+    mitra = models.OneToOneField(Mitra, on_delete=models.CASCADE, null=True, blank=True) 
+    nama_penyedia = models.CharField(max_length=255)
+    tipe = models.CharField(max_length=50)
     TIPE_CHOICES = [
         ('airline', 'Airline'),
         ('partner', 'Partner'),
     ]
-    mitra = models.OneToOneField(Mitra, on_delete=models.CASCADE)
+    mitra = models.OneToOneField(
+        Mitra, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='penyedia'
+    )
     nama_penyedia = models.CharField(max_length=100)
     tipe = models.CharField(max_length=20, choices=TIPE_CHOICES, default='partner')
 
@@ -45,3 +51,4 @@ class Hadiah(models.Model):
 
     def __str__(self):
         return f"{self.kode} - {self.nama}"
+    
