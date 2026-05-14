@@ -2,303 +2,314 @@
 
 {% block content %}
 <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <!-- Header Section -->
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-gray-900">Kelola Hadiah dan Penyedia</h1>
-            <button onclick="openModal('modalTambah')" class="bg-[#0a2540] text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-900 transition-colors flex items-center gap-2 text-sm">
-                <span>+</span> Tambah Hadiah
-            </button>
-        </div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <!-- Table Container -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-500 text-sm border-b border-gray-200 tracking-wide">
-                            <th class="p-4 font-bold" style="width: 10%;">Kode</th>
-                            <th class="p-4 font-bold" style="width: 18%;">Nama</th>
-                            <th class="p-4 font-bold" style="width: 20%;">Deskripsi</th>
-                            <th class="p-4 font-bold" style="width: 20%;">Penyedia</th>
-                            <th class="p-4 font-bold" style="width: 10%;">Miles</th>
-                            <th class="p-4 font-bold" style="width: 15%;">Periode</th>
-                            <th class="p-4 font-bold text-center" style="width: 7%;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 text-sm">
-                        
-                        <!-- Row 1 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 font-bold text-gray-800">RWD-001</td>
-                            <td class="p-4 font-bold text-gray-800">Tiket Domestik PP</td>
-                            <td class="p-4 text-gray-500">Tiket domestik ke pulau..</td>
-                            <td class="p-4 text-gray-700">
-                                <span class="font-bold">Garuda Indonesia</span> 
-                                <span class="px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded-full text-xs font-semibold ml-1">airline</span>
-                            </td>
-                            <td class="p-4 font-bold text-gray-800">15,000</td>
-                            <td class="p-4 text-gray-500">2024-01-01 — 2025-12-31</td>
-                            <td class="p-4 text-center space-x-3">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button onclick="openEditModal('RWD-001', 'Tiket Domestik PP', 'Tiket pulang-pergi rute domestik Indonesia', 'Garuda Indonesia (airline)', '15000', '01/01/2024', '31/12/2025')" class="text-gray-500 hover:text-gray-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24">
-                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z" fill="currentColor"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="openModal('modalHapus')" class="text-red-500 hover:text-red-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Row 2 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 font-bold text-gray-800">RWD-002</td>
-                            <td class="p-4 font-bold text-gray-800">Upgrade ke Business Class</td>
-                            <td class="p-4 text-gray-500">Upgrade dari economy k..</td>
-                            <td class="p-4 text-gray-700">
-                                <span class="font-bold">Garuda Indonesia</span> 
-                                <span class="px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded-full text-xs font-semibold ml-1">airline</span>
-                            </td>
-                            <td class="p-4 font-bold text-gray-800">25,000</td>
-                            <td class="p-4 text-gray-500">2024-01-01 — 2025-12-31</td>
-                            <td class="p-4 text-center space-x-3">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button onclick="openEditModal('RWD-002', 'Upgrade ke Business Class', 'Upgrade dari economy ke business class', 'Garuda Indonesia (airline)', '25000', '01/01/2024', '31/12/2025')" class="text-gray-500 hover:text-gray-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24">
-                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z" fill="currentColor"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="openModal('modalHapus')" class="text-red-500 hover:text-red-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Row 3 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 font-bold text-gray-800">RWD-003</td>
-                            <td class="p-4 font-bold text-gray-800">Voucher Hotel Rp 500.000</td>
-                            <td class="p-4 text-gray-500">Voucher hotel Jabodetab..</td>
-                            <td class="p-4 text-gray-700">
-                                <div class="flex items-center justify-center gap-1">
-                                    <span class="font-bold">TravelokaPartner</span> 
-                                    <span class="px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded-full text-xs font-semibold ml-1">partner</span>
-                                </div>
-                            </td>
-                            <td class="p-4 font-bold text-gray-800">8,000</td>
-                            <td class="p-4 text-gray-500">2024-06-01 — 2025-06-30</td>
-                            <td class="p-4 text-center space-x-3">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button onclick="openEditModal('RWD-003', 'Voucher Hotel Rp 500.000', 'Voucher menginap di hotel pilihan', 'TravelokaPartner (partner)', '8000', '01/06/2024', '30/06/2025')" class="text-gray-500 hover:text-gray-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24">
-                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z" fill="currentColor"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="openModal('modalHapus')" class="text-red-500 hover:text-red-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Row 4 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="p-4 font-bold text-gray-800">RWD-004</td>
-                            <td class="p-4 font-bold text-gray-800">Akses Lounge 1x</td>
-                            <td class="p-4 text-gray-500">Akses lounge seluruh ba..</td>
-                            <td class="p-4 text-gray-700">
-                                <span class="font-bold">Plaza Premium</span> 
-                                <span class="px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded-full text-xs font-semibold ml-1">partner</span>
-                            </td>
-                            <td class="p-4 font-bold text-gray-800">3,000</td>
-                            <td class="p-4 text-gray-500">2024-01-01 — 2025-12-31</td>
-                            <td class="p-4 text-center space-x-3">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button onclick="openEditModal('RWD-004', 'Akses Lounge 1x', 'Akses fasilitas lounge bandara', 'Plaza Premium (partner)', '3000', '01/01/2024', '31/12/2025')" class="text-gray-500 hover:text-gray-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24">
-                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z" fill="currentColor"/>
-                                        </svg>
-                                    </button>
-                                    <button onclick="openModal('modalHapus')" class="text-red-500 hover:text-red-800">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-900">Kelola Hadiah &amp; Penyedia</h1>
+      <button onclick="openModal('modalTambah')"
+        class="bg-[#1a3a5c] hover:bg-[#0f2844] text-white text-sm font-semibold px-5 py-2.5 rounded-lg flex items-center gap-2 transition">
+        + &nbsp;Tambah Hadiah
+      </button>
     </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="px-6 py-4 text-gray-500 font-semibold">Kode</th>
+              <th class="px-6 py-4 text-gray-500 font-semibold">Nama</th>
+              <th class="px-6 py-4 text-gray-500 font-semibold">Deskripsi</th>
+              <th class="px-6 py-4 text-gray-500 font-semibold">Penyedia</th>
+              <th class="px-6 py-4 text-gray-500 font-semibold">Miles</th>
+              <th class="px-6 py-4 text-gray-500 font-semibold">Periode</th>
+              <th class="px-6 py-4 text-gray-500 font-semibold text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for h in hadiah %}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">{{ h.kode }}</td>
+              <td class="px-6 py-4 text-gray-800 whitespace-nowrap">{{ h.nama }}</td>
+              <td class="px-6 py-4 text-gray-500 max-w-xs truncate">{{ h.deskripsi|truncatechars:25 }}</td>
+              <td class="px-6 py-4 text-gray-700 whitespace-nowrap">
+                {{ h.penyedia.nama_penyedia }}
+                <span class="ml-1 px-2 py-0.5 text-xs font-medium text-gray-500 border border-gray-300 rounded-full">
+                  {{ h.penyedia.tipe }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-gray-800 whitespace-nowrap">{{ h.miles|floatformat:"0g" }}</td>
+              <td class="px-6 py-4 text-gray-500 whitespace-nowrap">
+                {{ h.valid_start|date:"Y-m-d" }} — {{ h.valid_end|date:"Y-m-d" }}
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-end gap-3">
+                  <!-- Edit -->
+                  <button title="Edit"
+                    onclick='openEditModal(
+                      {{ h.pk }},
+                      "{{ h.kode }}",
+                      {{ h.penyedia.id }},
+                      "{{ h.nama|escapejs }}",
+                      "{{ h.deskripsi|escapejs }}",
+                      {{ h.miles }},
+                      "{{ h.valid_start|date:"Y-m-d" }}",
+                      "{{ h.valid_end|date:"Y-m-d" }}"
+                    )'
+                    class="text-gray-400 hover:text-gray-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <path fill-rule="evenodd" clip-rule="evenodd"
+                        d="M20.8477 1.87868C19.6761 0.707109 17.7766 0.707105 16.605 1.87868L2.44744 16.0363C2.02864 16.4551 1.74317 16.9885 1.62702 17.5692L1.03995 20.5046C0.760062 21.904 1.9939 23.1379 3.39334 22.858L6.32868 22.2709C6.90945 22.1548 7.44285 21.8693 7.86165 21.4505L22.0192 7.29289C23.1908 6.12132 23.1908 4.22183 22.0192 3.05025L20.8477 1.87868ZM18.0192 3.29289C18.4098 2.90237 19.0429 2.90237 19.4335 3.29289L20.605 4.46447C20.9956 4.85499 20.9956 5.48815 20.605 5.87868L17.9334 8.55027L15.3477 5.96448L18.0192 3.29289ZM13.9334 7.3787L3.86165 17.4505C3.72205 17.5901 3.6269 17.7679 3.58818 17.9615L3.00111 20.8968L5.93645 20.3097C6.13004 20.271 6.30784 20.1759 6.44744 20.0363L16.5192 9.96448L13.9334 7.3787Z"
+                        fill="currentColor" />
+                    </svg>
+                  </button>
+                  <!-- Delete -->
+                  <button title="Hapus" onclick='openHapusModal({{ h.pk }})'
+                    class="text-red-400 hover:text-red-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                      <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="px-6 py-10 text-center text-gray-400 text-sm">Belum ada hadiah.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Modal Tambah -->
-<div id="modalTambah" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div class="flex justify-between items-center p-6 border-b border-gray-100">
-            <h3 class="text-lg font-bold text-gray-900">Tambah Hadiah Baru</h3>
-            <button onclick="closeModal('modalTambah')" class="text-gray-400 hover:text-gray-500 text-2xl leading-none">&times;</button>
-        </div>
-        <form method="POST" class="p-6 space-y-4">
-            {% csrf_token %}
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Nama Hadiah</label>
-                <input type="text" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nama hadiah">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Penyedia</label>
-                    <select class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500">
-                        <option>Pilih penyedia</option>
-                        <option>Garuda Indonesia (airline)</option>
-                        <option>TravelokaPartner (partner)</option>
-                        <option>Plaza Premium (partner)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Miles Dibutuhkan</label>
-                    <input type="number" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500" value="0">
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
-                <textarea class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 resize-none" rows="3" placeholder="Tuliskan deskripsi singkat..."></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Valid Start</label>
-                    <input type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="dd/mm/yyyy">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Program End</label>
-                    <input type="text" class="w-full px-3 py-2 border rounded-lg" placeholder="dd/mm/yyyy">
-                </div>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-[#0a2540] text-white px-6 py-2 rounded-lg font-medium w-full sm:w-auto hover:bg-blue-900 transition">Simpan</button>
-            </div>
-        </form>
+<!-- ===== MODAL TAMBAH ===== -->
+<div id="modalTambah" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+    <div class="flex justify-between items-center px-6 pt-5 pb-4 border-b border-gray-100">
+      <h3 class="text-base font-bold text-gray-900">Tambah Hadiah Baru</h3>
+      <button onclick="closeModal('modalTambah')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
     </div>
+    <form method="POST" action="{% url 'rewards:hadiah_create' %}" class="px-6 py-5 space-y-4" onsubmit="return validateTanggal('tambah-start', 'tambah-end')">
+      {% csrf_token %}
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Hadiah</label>
+        <input type="text" name="nama" required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Penyedia</label>
+          <select name="penyedia" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="">Pilih penyedia</option>
+            <optgroup label="── Maskapai ──">
+              {% for p in penyedia_list %}{% if p.tipe == 'airline' %}
+              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              {% endif %}{% endfor %}
+            </optgroup>
+            <optgroup label="── Mitra ──">
+              {% for p in penyedia_list %}{% if p.tipe == 'partner' %}
+              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              {% endif %}{% endfor %}
+            </optgroup>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Miles Dibutuhkan</label>
+          <input type="number" name="miles" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Deskripsi</label>
+        <textarea name="deskripsi" rows="3" required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Valid Start</label>
+          <input type="date" id="tambah-start" name="valid_start" required
+            onchange="updateMinEnd('tambah-start', 'tambah-end')"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Program End</label>
+          <input type="date" id="tambah-end" name="valid_end" required
+            onchange="validateTanggal('tambah-start', 'tambah-end')"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+      <p id="tambah-date-error" class="text-red-500 text-xs hidden">Tanggal akhir tidak boleh lebih awal dari tanggal mulai.</p>
+      <div class="flex justify-end pt-1">
+        <button type="submit"
+          class="bg-[#1a3a5c] hover:bg-[#0f2844] text-white text-sm font-semibold px-6 py-2 rounded-md transition">
+          Simpan
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
-<!-- Modal Edit -->
-<div id="modalEdit" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div class="flex justify-between items-center p-6 border-b border-gray-100">
-            <h3 class="text-lg font-bold text-gray-900">Edit Hadiah</h3>
-            <button onclick="closeModal('modalEdit')" class="text-gray-400 hover:text-gray-500 text-2xl leading-none">&times;</button>
-        </div>
-        <form method="POST" class="p-6 space-y-4">
-            {% csrf_token %}
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode Hadiah</label>
-                    <input type="text" id="edit-kode" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Nama Hadiah</label>
-                    <input type="text" id="edit-nama" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Penyedia</label>
-                    <select id="edit-penyedia" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500">
-                        <option>Garuda Indonesia (airline)</option>
-                        <option>TravelokaPartner (partner)</option>
-                        <option>Plaza Premium (partner)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Miles Dibutuhkan</label>
-                    <input type="number" id="edit-miles" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500">
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi</label>
-                <textarea id="edit-deskripsi" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 resize-none" rows="3"></textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="relative">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Valid Start</label>
-                    <input type="text" id="edit-start" class="w-full px-3 py-2 border rounded-lg pr-8">
-                    <span class="absolute right-3 top-8 text-gray-400">📅</span>
-                </div>
-                <div class="relative">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Program End</label>
-                    <input type="text" id="edit-end" class="w-full px-3 py-2 border rounded-lg pr-8">
-                    <span class="absolute right-3 top-8 text-gray-400">📅</span>
-                </div>
-            </div>
-            <div class="pt-4 flex justify-end">
-                <button type="submit" class="bg-[#0a2540] text-white px-6 py-2 rounded-lg font-medium w-full sm:w-auto hover:bg-blue-900 transition">Simpan</button>
-            </div>
-        </form>
+<!-- ===== MODAL EDIT ===== -->
+<div id="modalEdit" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+    <div class="flex justify-between items-center px-6 pt-5 pb-4 border-b border-gray-100">
+      <h3 class="text-base font-bold text-gray-900">Edit Hadiah</h3>
+      <button onclick="closeModal('modalEdit')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
     </div>
+    <form method="POST" id="formEdit" class="px-6 py-5 space-y-4" onsubmit="return validateTanggal('edit-start', 'edit-end')">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Kode Hadiah</label>
+          <input type="text" id="edit-kode" readonly
+            class="w-full px-3 py-2 border border-gray-200 rounded-md text-sm bg-gray-100 text-gray-400 cursor-not-allowed">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Hadiah</label>
+          <input type="text" id="edit-nama" name="nama" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Penyedia</label>
+          <select id="edit-penyedia" name="penyedia" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <optgroup label="── Maskapai ──">
+              {% for p in penyedia_list %}{% if p.tipe == 'airline' %}
+              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              {% endif %}{% endfor %}
+            </optgroup>
+            <optgroup label="── Mitra ──">
+              {% for p in penyedia_list %}{% if p.tipe == 'partner' %}
+              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              {% endif %}{% endfor %}
+            </optgroup>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Miles Dibutuhkan</label>
+          <input type="number" id="edit-miles" name="miles" required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700 mb-1">Deskripsi</label>
+        <textarea id="edit-deskripsi" name="deskripsi" rows="3" required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Valid Start</label>
+          <input type="date" id="edit-start" name="valid_start" required
+            onchange="updateMinEnd('edit-start', 'edit-end')"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Program End</label>
+          <input type="date" id="edit-end" name="valid_end" required
+            onchange="validateTanggal('edit-start', 'edit-end')"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+      <p id="edit-date-error" class="text-red-500 text-xs hidden">Tanggal akhir tidak boleh lebih awal dari tanggal mulai.</p>
+      <div class="flex justify-end pt-1">
+        <button type="submit"
+          class="bg-[#1a3a5c] hover:bg-[#0f2844] text-white text-sm font-semibold px-6 py-2 rounded-md transition">
+          Simpan
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
-<div id="modalHapus" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden p-6 text-center">
-        <h3 class="text-xl font-bold text-gray-900 mb-2">Hapus Hadiah?</h3>
-        <p class="text-sm text-gray-500 mb-6">Jika hadiah sudah pernah di-redeem oleh Member, riwayat redeem akan terpengaruh.</p>
-        
-        <div class="flex justify-center gap-3">
-            <button onclick="closeModal('modalHapus')" class="px-4 py-2 border rounded-lg font-medium text-gray-700 hover:bg-gray-50">Batal</button>
-            <button class="bg-red-600 text-white hover:bg-red-800 px-4 py-2 rounded-lg font-medium transition">Hapus</button>
-        </div>
-    </div>
+<!-- ===== MODAL HAPUS ===== -->
+<div id="modalHapus" class="fixed inset-0 z-50 hidden bg-black/60 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+    <h3 class="text-base font-bold text-gray-900 mb-2">Hapus Hadiah?</h3>
+    <p class="text-sm text-gray-500 mb-6">
+      Jika hadiah sudah pernah di-redeem oleh Member, riwayat redeem akan terpengaruh.
+    </p>
+    <form method="POST" id="formHapus">
+      {% csrf_token %}
+      <div class="flex justify-end gap-3">
+        <button type="button" onclick="closeModal('modalHapus')"
+          class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+          Batal
+        </button>
+        <button type="submit"
+          class="px-4 py-2 bg-[#1a3a5c] hover:bg-[#0f2844] rounded-md text-sm font-semibold text-white transition">
+          Hapus
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
-    function openModal(id) { 
-        document.getElementById(id).classList.remove('hidden'); 
-    }
-    
-    function closeModal(id) { 
-        document.getElementById(id).classList.add('hidden'); 
-    }
+  function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+  function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-    function openEditModal(kode, nama, deskripsi, penyedia, miles, start, end) {
-        document.getElementById('edit-kode').value = kode;
-        document.getElementById('edit-nama').value = nama;
-        document.getElementById('edit-deskripsi').value = deskripsi;
-        document.getElementById('edit-penyedia').value = penyedia;
-        document.getElementById('edit-miles').value = miles;
-        document.getElementById('edit-start').value = start;
-        document.getElementById('edit-end').value = end;
-        openModal('modalEdit');
+  // Saat valid_start berubah, set min pada valid_end agar tidak bisa pilih tanggal sebelumnya
+  function updateMinEnd(startId, endId) {
+    var startVal = document.getElementById(startId).value;
+    var endInput = document.getElementById(endId);
+    if (startVal) {
+      endInput.min = startVal;
+      // Jika tanggal akhir sudah diisi dan lebih kecil dari start, reset
+      if (endInput.value && endInput.value < startVal) {
+        endInput.value = '';
+      }
     }
+    validateTanggal(startId, endId);
+  }
+
+  // Validasi sebelum submit: tanggal akhir tidak boleh lebih awal dari tanggal mulai
+  function validateTanggal(startId, endId) {
+    var prefix = startId.replace('-start', '');
+    var startVal = document.getElementById(startId).value;
+    var endVal   = document.getElementById(endId).value;
+    var errEl    = document.getElementById(prefix + '-date-error');
+    var endInput = document.getElementById(endId);
+
+    if (startVal && endVal && endVal < startVal) {
+      if (errEl) errEl.classList.remove('hidden');
+      endInput.classList.add('border-red-500');
+      endInput.classList.remove('border-gray-300');
+      return false; // batalkan submit
+    }
+    if (errEl) errEl.classList.add('hidden');
+    endInput.classList.remove('border-red-500');
+    endInput.classList.add('border-gray-300');
+    return true;
+  }
+
+  function openEditModal(pk, kode, penyediaId, nama, deskripsi, miles, validStart, validEnd) {
+    document.getElementById('edit-kode').value      = kode;
+    document.getElementById('edit-nama').value      = nama;
+    document.getElementById('edit-deskripsi').value = deskripsi;
+    document.getElementById('edit-penyedia').value  = penyediaId;
+    document.getElementById('edit-miles').value     = miles;
+    document.getElementById('edit-start').value     = validStart;
+    document.getElementById('edit-end').value       = validEnd;
+    // Set min supaya Program End tidak bisa lebih awal dari Valid Start
+    document.getElementById('edit-end').min         = validStart;
+    document.getElementById('formEdit').action = "{% url 'rewards:hadiah_update' 0 %}".replace('/0/', '/' + pk + '/');
+    openModal('modalEdit');
+  }
+
+  function openHapusModal(pk) {
+    document.getElementById('formHapus').action = "{% url 'rewards:hadiah_delete' 0 %}".replace('/0/', '/' + pk + '/');
+    openModal('modalHapus');
+  }
 </script>
-
 {% endblock %}

@@ -132,15 +132,76 @@ def dashboard(request):
 
 
 def profil_view(request):
-    if not request.session.get('user_email'):
+    user_email = request.session.get('user_email')
+    role = request.session.get('role')
+
+    if not user_email:
         return redirect('authentication:login')
 
-    email = request.session.get('user_email')
+    # --- LOGIKA POST (UPDATE KE SUPABASE) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        # Skenario 1: Update Profil Dasar
+        if action == 'update_profile':
+            try:
+                first_name = request.POST.get('first_name', '').strip()
+                mid_name   = request.POST.get('mid_name', '').strip()
+                # Gabungkan kembali jadi first_mid_name untuk disimpan ke DB
+                first_mid_name = f"{first_name} {mid_name}".strip() if mid_name else first_name
 
+                settings.SUPABASE_CLIENT.table('pengguna').update({
+                    'salutation':     request.POST.get('salutation'),
+                    'first_mid_name': first_mid_name,
+                    'last_name':      request.POST.get('last_name'),
+                    'kewarganegaraan': request.POST.get('citizenship'),
+                    'country_code':   request.POST.get('country_code'),
+                    'mobile_number':  request.POST.get('phone'),
+                    'tanggal_lahir':  request.POST.get('dob'),
+                }).eq('email', user_email).execute()
+            except Exception as e:
+                messages.error(request, {e})
+
+        # Skenario 2: Update Password
+        elif action == 'update_password':
+            old_pass = request.POST.get('old_pass')
+            new_pass = request.POST.get('new_pass')
+            confirm_pass = request.POST.get('confirm_pass')
+
+            if new_pass != confirm_pass:
+                messages.error(request, "Konfirmasi password baru tidak cocok!")
+            else:
+                res = settings.SUPABASE_CLIENT.table('pengguna').select('password').eq('email', user_email).execute()
+                if res.data and res.data[0]['password'] == old_pass:
+                    settings.SUPABASE_CLIENT.table('pengguna').update({'password': new_pass}).eq('email', user_email).execute()
+        
+        return redirect('main:profil')
+
+    # --- LOGIKA GET (AMBIL DATA UNTUK TAMPILAN) ---
+    context = {'role': role}
     try:
-        res = settings.SUPABASE_CLIENT.table('pengguna').select('*').eq('email', email).execute()
-        profile = res.data[0]
-    except Exception:
-        profile = None
+        res_p = settings.SUPABASE_CLIENT.table('pengguna').select('*').eq('email', user_email).execute()
+        if res_p.data:
+            profile = res_p.data[0]
 
-    return render(request, 'profil.html', {'profile': profile})
+            # Split first_mid_name → nama_depan + nama_tengah
+            first_mid = profile.get('first_mid_name', '') or ''
+            parts = first_mid.strip().split(' ', 1)
+            profile['nama_depan']  = parts[0] if len(parts) >= 1 else ''
+            profile['nama_tengah'] = parts[1] if len(parts) >= 2 else ''
+            profile['nama_belakang'] = profile.get('last_name', '') or ''
+
+            context['profile'] = profile
+
+        if role == 'member':
+            res_m = settings.SUPABASE_CLIENT.table('member').select('*').eq('email', user_email).execute()
+            if res_m.data: context['member'] = res_m.data[0]
+        elif role == 'staf':
+            res_s = settings.SUPABASE_CLIENT.table('staf').select('*').eq('email', user_email).execute()
+            if res_s.data: context['staf'] = res_s.data[0]
+            maskapai = settings.SUPABASE_CLIENT.table('maskapai').select('*').execute()
+            context['list_maskapai'] = maskapai.data
+    except Exception as e:
+        print(f"Error: {e}")
+
+    return render(request, 'profil.html', context)

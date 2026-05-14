@@ -7,58 +7,87 @@
         
         <h1 class="text-2xl font-bold mb-6 text-gray-900">Pengaturan Profil</h1>
 
-        <!-- Card Data Profil -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-6">
             <h2 class="text-xl font-bold mb-6 text-gray-800">Data Profil</h2>
             
-            <form id="profileForm" class="space-y-4">
+            <form method="POST" action="{% url 'main:profil' %}" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_profile">
+
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" value="john@example.com" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
+                    <input type="email" value="{{ profile.email|default:'' }}" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Nomor Member</label>
-                        <input type="text" value="M0001" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
+                {% if role == 'member' %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Nomor Member</label>
+                            <input type="text" value="{{ member.nomor_member|default:'-' }}" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Bergabung</label>
+                            <input type="text" value="{{ member.tanggal_gabung|default:'-' }}" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Bergabung</label>
-                        <input type="text" value="2024-01-15" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
+                {% elif role == 'staf' %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">ID Staf</label>
+                            <input type="text" value="{{ staf.id_staf|default:'-' }}" class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" readonly>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Kode Maskapai</label>
+                            <select class="w-full px-3 py-2 border bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed" disabled>
+                                {% for m in list_maskapai %}
+                                    <option value="{{ m.kode_maskapai }}" {% if m.kode_maskapai == staf.kode_maskapai %}selected{% endif %}>
+                                        {{ m.kode_maskapai }} - {{ m.nama_maskapai }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                </div>
+                {% endif %}
 
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Salutation</label>
-                    <select id="salutation" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="Mr." selected>Mr.</option>
-                        <option value="Mrs.">Mrs.</option>
-                        <option value="Ms.">Ms.</option>
+                    <select name="salutation" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="Mr." {% if profile.salutation == 'Mr.' %}selected{% endif %}>Mr.</option>
+                        <option value="Mrs." {% if profile.salutation == 'Mrs.' %}selected{% endif %}>Mrs.</option>
+                        <option value="Ms." {% if profile.salutation == 'Ms.' %}selected{% endif %}>Ms.</option>
                     </select>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Nama Depan</label>
-                        <input type="text" id="firstName" value="John" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" name="first_name" value="{{ profile.nama_depan|default:'' }}" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Nama Tengah</label>
-                        <input type="text" id="midName" value="William" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" name="mid_name" value="{{ profile.nama_tengah|default:'' }}" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Nama Belakang</label>
-                        <input type="text" id="lastName" value="Doe" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" name="last_name" value="{{ profile.nama_belakang|default:'' }}" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Kewarganegaraan</label>
-                        <select id="citizenship" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="Indonesia" selected>Indonesia</option>
-                            <option value="Singapore">Singapore</option>
-                            <option value="Malaysia">Malaysia</option>
+                        <select name="citizenship" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="Indonesia" {% if profile.kewarganegaraan == 'Indonesia' %}selected{% endif %}>Indonesia</option>
+                            <option value="Singapore" {% if profile.kewarganegaraan == 'Singapore' %}selected{% endif %}>Singapore</option>
+                            <option value="Malaysia" {% if profile.kewarganegaraan == 'Malaysia' %}selected{% endif %}>Malaysia</option>
                         </select>
                     </div>
                 </div>
@@ -66,24 +95,36 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Country Code</label>
-                        <select id="countryCode" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="+62" selected>+62</option>
-                            <option value="+65">+65</option>
-                            <option value="+60">+60</option>
+                        <select name="country_code" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="+62" {% if profile.country_code == '+62' %}selected{% endif %}>+62</option>
+                            <option value="+65" {% if profile.country_code == '+65' %}selected{% endif %}>+65</option>
+                            <option value="+60" {% if profile.country_code == '+60' %}selected{% endif %}>+60</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Nomor HP</label>
-                        <input type="text" id="phone" value="81234567890" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="text" name="phone" value="{{ profile.mobile_number|default:'' }}" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Lahir</label>
-                    <div class="relative">
-                        <input type="text" id="dob" value="15/05/1990" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none pr-10">
-                        <i class="far fa-calendar absolute right-3 top-3 text-gray-400"></i>
+                <div class="grid grid-cols-1 {% if role == 'staf' %}md:grid-cols-2{% endif %} gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Lahir</label>
+                        <input type="date" name="dob" value="{{ profile.tanggal_lahir|default:'' }}" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
+                    
+                    {% if role == 'staf' %}
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Kode Maskapai</label>
+                        <select name="kode_maskapai" class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            {% for m in list_maskapai %}
+                                <option value="{{ m.kode_maskapai }}" {% if staf.kode_maskapai == m.kode_maskapai %}selected{% endif %}>
+                                    {{ m.kode_maskapai }} - {{ m.nama_maskapai }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="pt-4 flex justify-end">
@@ -92,7 +133,6 @@
             </form>
         </div>
 
-        <!-- Card Ubah Password -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
             <h2 class="text-xl font-bold mb-4 text-gray-800">Ubah Password</h2>
             <button onclick="openModal('passwordModal')" class="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium">Ubah Password</button>
@@ -101,7 +141,6 @@
     </div>
 </div>
 
-<!-- Modal Ubah Password -->
 <div id="passwordModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/75 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
         <div class="flex justify-between items-center p-6 border-b border-gray-100">
@@ -109,18 +148,20 @@
             <button onclick="closeModal('passwordModal')" class="text-gray-400 hover:text-gray-500 text-2xl leading-none">&times;</button>
         </div>
         
-        <form id="passwordForm" class="p-6 space-y-4">
+        <form method="POST" action="{% url 'main:profil' %}" class="p-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_password">
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Password Lama</label>
-                <input type="password" id="oldPass" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="password" name="old_pass" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none">
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Password Baru</label>
-                <input type="password" id="newPass" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50">
+                <input type="password" name="new_pass" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50">
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Konfirmasi Password Baru</label>
-                <input type="password" id="confirmPass" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50">
+                <input type="password" name="confirm_pass" required class="w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50">
             </div>
             <div class="pt-4 flex justify-end">
                 <button type="submit" class="bg-[#0a2540] text-white px-6 py-2 rounded-lg font-medium w-full sm:w-auto hover:bg-blue-900 transition">Simpan</button>
@@ -130,7 +171,6 @@
 </div>
 
 <script>
-    // Logika Toggle Modal
     function openModal(id) { 
         document.getElementById(id).classList.remove('hidden'); 
     }
@@ -139,49 +179,11 @@
         document.getElementById(id).classList.add('hidden'); 
     }
 
-    // Menutup modal jika klik di luar area konten modal
     window.onclick = function(event) {
         let modal = document.getElementById('passwordModal');
         if (event.target == modal) { 
             closeModal('passwordModal'); 
         }
     }
-
-    // Skenario 1: Update Profil
-    document.getElementById('profileForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const data = {
-            salutation: document.getElementById('salutation').value,
-            name: document.getElementById('firstName').value + " " + document.getElementById('lastName').value,
-            phone: document.getElementById('phone').value
-        };
-        
-        console.log("Memvalidasi dan menyimpan data...", data);
-        alert("Perubahan profil berhasil disimpan!");
-    });
-
-    // Skenario 2: Ubah Password
-    document.getElementById('passwordForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const oldPass = document.getElementById('oldPass').value;
-        const newPass = document.getElementById('newPass').value;
-        const confirmPass = document.getElementById('confirmPass').value;
-
-        if (newPass !== confirmPass) {
-            alert("Konfirmasi password baru tidak cocok!");
-            return;
-        }
-
-        if (oldPass === "password123") {
-            alert("Password berhasil diperbarui!");
-            closeModal('passwordModal');
-            this.reset();
-        } else {
-            alert("Password lama salah!");
-        }
-    });
 </script>
-
 {% endblock %}

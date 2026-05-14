@@ -1,198 +1,179 @@
-import datetime
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.conf import settings
+from pyexpat.errors import messages
+
+from django.shortcuts import render, redirect, get_object_or_404
+
+from aeromiles import settings
+from .models import Hadiah, Penyedia, Mitra
+from datetime import date, datetime
+
+
+def _sync_penyedia():
+    """Pastikan semua maskapai dan mitra punya entri Penyedia di DB."""
+    # 3 maskapai tetap
+    for nama in ["Garuda Indonesia", "Batik Air", "Sriwijaya Air"]:
+        Penyedia.objects.get_or_create(
+            nama_penyedia=nama,
+            tipe='airline',
+            defaults={'mitra': None},
+        )
+
+    PARTNER_NAMES = [
+        "TravelokaPartner",
+        "Plaza Premium",
+        "ShopIndo Partner",
+        "Resto Partner Group",
+        "Hotel Bintang Indonesia",
+    ]
+    for nama in PARTNER_NAMES:
+        Penyedia.objects.get_or_create(
+            nama_penyedia=nama,
+            tipe='partner',
+            defaults={'mitra': None},
+        )
+
+    # Sync mitra yang ditambahkan manual lewat form Tambah Mitra
+    for mitra in Mitra.objects.all():
+        Penyedia.objects.update_or_create(
+            mitra=mitra,
+            defaults={'nama_penyedia': mitra.nama, 'tipe': 'partner'},
+        )
+
 
 def hadiah_list(request):
-    penyedia_id = request.GET.get('penyedia')
-    status = request.GET.get('status')
-    hari_ini = datetime.date.today().isoformat()
+    """READ: tampilkan semua hadiah."""
+    _sync_penyedia()
 
-    hadiah_data = []
-    penyedia_list = []
-
-    try:
-        query = settings.SUPABASE_CLIENT.table('hadiah').select('*, penyedia(nama_penyedia)')
-
-        if penyedia_id:
-            query = query.eq('id_penyedia', penyedia_id)
-
-        if status == 'aktif':
-            query = query.gte('program_end', hari_ini)
-        elif status == 'expired':
-            query = query.lt('program_end', hari_ini)
-
-        hadiah_res = query.execute()
-        if hadiah_res.data:
-            hadiah_data = hadiah_res.data
-
-        penyedia_res = settings.SUPABASE_CLIENT.table('penyedia').select('*').execute()
-        if penyedia_res.data:
-            penyedia_list = penyedia_res.data
-
-    except Exception as e:
-        print(f"Error fetch hadiah: {e}")
+    hadiah = Hadiah.objects.select_related('penyedia').all()
+    penyedia_list = Penyedia.objects.all().order_by('tipe', 'id')
 
     return render(request, 'hadiah/list.html', {
-        'hadiah': hadiah_data,
-        'penyedia_list': penyedia_list
+        'hadiah':        hadiah,
+        'penyedia_list': penyedia_list,
     })
+
 
 def hadiah_create(request):
+    """CREATE: form di-POST dari modal Tambah di list_hadiah.html."""
     if request.method == 'POST':
-        try:
-            settings.SUPABASE_CLIENT.table('hadiah').insert({
-                "nama": request.POST.get('nama'),
-                "miles": request.POST.get('miles'),
-                "deskripsi": request.POST.get('deskripsi'),
-                "valid_start_date": request.POST.get('valid_start_date'),
-                "program_end": request.POST.get('program_end'),
-                "id_penyedia": request.POST.get('id_penyedia')
-            }).execute()
-            messages.success(request, "Hadiah berhasil ditambahkan!")
-            return redirect('rewards:hadiah_list')
-        except Exception as e:
-            print(f"Gagal tambah hadiah: {e}")
-            messages.error(request, "Gagal menambahkan hadiah.")
+        nama        = request.POST.get('nama', '').strip()
+        penyedia_id = request.POST.get('penyedia')
+        miles       = request.POST.get('miles')
+        deskripsi   = request.POST.get('deskripsi', '').strip()
+        valid_start = request.POST.get('valid_start')
+        valid_end   = request.POST.get('valid_end')
 
-    penyedia_list = []
-    try:
-        res = settings.SUPABASE_CLIENT.table('penyedia').select('*').execute()
-        penyedia_list = res.data or []
-    except Exception as e:
-        pass
-
-    return render(request, 'hadiah/form.html', {
-        'title': 'Tambah Hadiah',
-        'penyedia_list': penyedia_list
-    })
-
-def hadiah_update(request, pk):
-    if request.method == 'GET':
-        try:
-            hadiah_res = settings.SUPABASE_CLIENT.table('hadiah').select('*').eq('kode_hadiah', pk).single().execute()
-            penyedia_res = settings.SUPABASE_CLIENT.table('penyedia').select('*').execute()
-            
-            return render(request, 'hadiah/form.html', {
-                'title': 'Edit Hadiah',
-                'hadiah': hadiah_res.data,
-                'penyedia_list': penyedia_res.data or []
-            })
-        except Exception as e:
-            print(f"Error load hadiah edit: {e}")
-            return redirect('rewards:hadiah_list')
-
-    elif request.method == 'POST':
-        try:
-            settings.SUPABASE_CLIENT.table('hadiah').update({
-                "nama": request.POST.get('nama'),
-                "miles": request.POST.get('miles'),
-                "deskripsi": request.POST.get('deskripsi'),
-                "valid_start_date": request.POST.get('valid_start_date'),
-                "program_end": request.POST.get('program_end'),
-                "id_penyedia": request.POST.get('id_penyedia')
-            }).eq('kode_hadiah', pk).execute()
-            
-            messages.success(request, "Hadiah berhasil diperbarui!")
-        except Exception as e:
-            print(f"Gagal update hadiah: {e}")
-            messages.error(request, "Gagal memperbarui hadiah.")
-            
-        return redirect('rewards:hadiah_list')
-
-def hadiah_delete(request, pk):
-    try:
-        hari_ini = datetime.date.today().isoformat()
-        hadiah_res = settings.SUPABASE_CLIENT.table('hadiah').select('program_end').eq('kode_hadiah', pk).single().execute()
-        
-        if hadiah_res.data:
-            program_end = hadiah_res.data['program_end']
-            if program_end < hari_ini:
-                settings.SUPABASE_CLIENT.table('hadiah').delete().eq('kode_hadiah', pk).execute()
-                messages.success(request, "Hadiah berhasil dihapus!")
-            else:
-                # Belum expired, tolak
-                messages.error(request, "Gagal! Hadiah masih aktif dan belum kedaluwarsa.")
-                
-    except Exception as e:
-        print(f"Error delete hadiah: {e}")
+        if nama and penyedia_id and miles and deskripsi and valid_start and valid_end:
+            penyedia = get_object_or_404(Penyedia, pk=penyedia_id)
+            Hadiah.objects.create(
+                nama        = nama,
+                penyedia    = penyedia,
+                miles       = int(miles),
+                deskripsi   = deskripsi,
+                valid_start = valid_start,
+                valid_end   = valid_end,
+            )
 
     return redirect('rewards:hadiah_list')
 
+
+def hadiah_update(request, pk):
+    """UPDATE: form di-POST dari modal Edit di list_hadiah.html."""
+    hadiah = get_object_or_404(Hadiah, pk=pk)
+
+    if request.method == 'POST':
+        nama        = request.POST.get('nama', '').strip()
+        penyedia_id = request.POST.get('penyedia')
+        miles       = request.POST.get('miles')
+        deskripsi   = request.POST.get('deskripsi', '').strip()
+        valid_start = request.POST.get('valid_start')
+        valid_end   = request.POST.get('valid_end')
+
+        if nama and penyedia_id and miles and deskripsi and valid_start and valid_end:
+            penyedia = get_object_or_404(Penyedia, pk=penyedia_id)
+            hadiah.nama        = nama
+            hadiah.penyedia    = penyedia
+            hadiah.miles       = int(miles)
+            hadiah.deskripsi   = deskripsi
+            hadiah.valid_start = valid_start
+            hadiah.valid_end   = valid_end
+            hadiah.save()
+
+    return redirect('rewards:hadiah_list')
+
+
+def hadiah_delete(request, pk):
+    """DELETE: hapus hadiah."""
+    hadiah = get_object_or_404(Hadiah, pk=pk)
+
+    if request.method == 'POST':
+        hadiah.delete()
+
+    return redirect('rewards:hadiah_list')
+
+
 def mitra_list(request):
-    mitras = []
-    try:
-        mitra_res = settings.SUPABASE_CLIENT.table('mitra').select('*').execute()
-        mitras = mitra_res.data or []
-    except Exception as e:
-        print(f"Error load mitra: {e}")
-        
+    """READ: tampilkan semua mitra."""
+    _sync_penyedia()
+    mitras = Mitra.objects.all()
     return render(request, 'mitra/list.html', {'mitras': mitras})
 
+
 def mitra_create(request):
+    """CREATE: form di-POST dari modal Tambah di list_mitra.html.
+    Otomatis membuat entri Penyedia terkait."""
     if request.method == 'POST':
-        email = request.POST.get('email')
-        nama = request.POST.get('nama')
-        deskripsi = request.POST.get('deskripsi', '')
-        
-        try:
-            settings.SUPABASE_CLIENT.table('mitra').insert({
-                "email": email,
-                "nama": nama,
-                "deskripsi": deskripsi
-            }).execute()
+        email              = request.POST.get('email', '').strip()
+        nama               = request.POST.get('nama', '').strip()
+        tanggal_kerja_sama = request.POST.get('tanggal_kerja_sama')
 
-            settings.SUPABASE_CLIENT.table('penyedia').insert({
-                "email_mitra": email,
-                "nama_penyedia": nama
-            }).execute()
+        if email and nama and tanggal_kerja_sama:
+            # Cek email belum terdaftar
+            if not Mitra.objects.filter(email=email).exists():
+                mitra = Mitra.objects.create(
+                    email              = email,
+                    nama               = nama,
+                    tanggal_kerja_sama = tanggal_kerja_sama,
+                )
+                # Otomatis buat entri Penyedia
+                Penyedia.objects.create(
+                    mitra         = mitra,
+                    nama_penyedia = mitra.nama,
+                    tipe          = 'partner',   # default; bisa diubah kemudian
+                )
 
-            messages.success(request, "Mitra dan Penyedia berhasil ditambahkan!")
-            return redirect('rewards:mitra_list')
-        except Exception as e:
-            print(f"Error tambah mitra: {e}")
-            messages.error(request, "Gagal menambahkan Mitra. Pastikan email belum terdaftar.")
+    return redirect('rewards:mitra_list')
 
-    return render(request, 'mitra/create.html')
 
 def mitra_update(request, email):
-    if request.method == 'GET':
-        try:
-            mitra_res = settings.SUPABASE_CLIENT.table('mitra').select('*').eq('email', email).single().execute()
-            return render(request, 'mitra/update.html', {'mitra': mitra_res.data})
-        except Exception as e:
-            return redirect('rewards:mitra_list')
+    """UPDATE: email tidak boleh berubah (PK).
+    Form di-POST dari modal Edit di list_mitra.html."""
+    mitra = get_object_or_404(Mitra, email=email)
 
-    elif request.method == 'POST':
-        nama = request.POST.get('nama')
-        deskripsi = request.POST.get('deskripsi', '')
-        
-        try:
-            settings.SUPABASE_CLIENT.table('mitra').update({
-                "nama": nama,
-                "deskripsi": deskripsi
-            }).eq('email', email).execute()
+    if request.method == 'POST':
+        nama               = request.POST.get('nama', '').strip()
+        tanggal_kerja_sama = request.POST.get('tanggal_kerja_sama')
 
-            settings.SUPABASE_CLIENT.table('penyedia').update({
-                "nama_penyedia": nama
-            }).eq('email_mitra', email).execute()
+        if nama and tanggal_kerja_sama:
+            mitra.nama               = nama
+            mitra.tanggal_kerja_sama = tanggal_kerja_sama
+            mitra.save()
 
-            messages.success(request, "Data Mitra berhasil diperbarui!")
-        except Exception as e:
-            print(f"Error update mitra: {e}")
-            messages.error(request, "Gagal memperbarui data Mitra.")
-            
-        return redirect('rewards:mitra_list')
+            try:
+                mitra.penyedia.nama_penyedia = nama
+                mitra.penyedia.save()
+            except Penyedia.DoesNotExist:
+                pass
+
+    return redirect('rewards:mitra_list')
+
 
 def mitra_delete(request, email):
+    """DELETE: hapus mitra — cascade ke Penyedia dan Hadiah terkait."""
+    mitra = get_object_or_404(Mitra, email=email)
+
     if request.method == 'POST':
-        try:
-            settings.SUPABASE_CLIENT.table('mitra').delete().eq('email', email).execute()
-            messages.success(request, "Mitra berhasil dihapus!")
-        except Exception as e:
-            print(f"Error delete mitra: {e}")
-            messages.error(request, "Gagal menghapus Mitra.")
-            
+        mitra.delete()   # CASCADE ke Penyedia (dan Hadiah via FK)
+
     return redirect('rewards:mitra_list')
 
 def katalog(request):
