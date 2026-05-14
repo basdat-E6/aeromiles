@@ -145,3 +145,5 @@ if SUPABASE_URL and SUPABASE_KEY:
     SUPABASE_CLIENT: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 else:
     print("WARNING: Supabase URL atau Key belum terpasang di file .env!")
+
+DATABASE_URL = os.environ.get("DATABASE_URL")

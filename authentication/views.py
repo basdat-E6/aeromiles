@@ -2,13 +2,17 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from datetime import date
-
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from django.conf import settings
+
+def get_db_connection():
+    return psycopg2.connect(settings.DATABASE_URL) 
 
 def register(request):
     if request.method == "POST":
         role = request.POST.get('role')
-        email = request.POST.get('email')
+        email = request.POST.get('email').strip().lower()
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
 
@@ -16,52 +20,69 @@ def register(request):
             messages.error(request, "Password dan konfirmasi password tidak sama.")
             return redirect('authentication:register')
 
+        conn = None
         try:
-            settings.SUPABASE_CLIENT.auth.sign_up({
-                "email": email,
-                "password": password
-            })
-
+            conn = get_db_connection()
+            cursor = conn.cursor()
             hashed_pw = make_password(password)
 
-            settings.SUPABASE_CLIENT.table('pengguna').insert({
-                "email": email,
-                "password": hashed_pw,
-                "salutation": request.POST.get('salutation'),
-                "first_mid_name": request.POST.get('first_name'),
-                "last_name": request.POST.get('last_name'),
-                "country_code": request.POST.get('country_code'),
-                "mobile_number": request.POST.get('phone'),
-                "tanggal_lahir": request.POST.get('dob'),
-                "kewarganegaraan": request.POST.get('nationality')
-            }).execute()
+            cursor.execute("""
+                INSERT INTO pengguna (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                email, hashed_pw, request.POST.get('salutation'), 
+                request.POST.get('first_name'), request.POST.get('last_name'), 
+                request.POST.get('country_code'), request.POST.get('phone'), 
+                request.POST.get('dob'), request.POST.get('nationality')
+            ))
 
             if role == 'member':
-                settings.SUPABASE_CLIENT.table('member').insert({
-                    "email": email,
-                    "tanggal_gabung": date.today().isoformat(),
-                    "id_tier": "T1",
-                    "award_miles": 0,
-                    "total_miles": 0
-                }).execute()
+                cursor.execute("""
+                    INSERT INTO member (email, tanggal_gabung, id_tier, award_miles, total_miles)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (email, date.today().isoformat(), "T01", 0, 0))
 
             elif role == 'staf':
-                settings.SUPABASE_CLIENT.table('staf').insert({
-                    "email": email,
-                    "kode_maskapai": request.POST.get('airline_code')
-                }).execute()
+                cursor.execute("""
+                    INSERT INTO staf (email, kode_maskapai)
+                    VALUES (%s, %s)
+                """, (email, request.POST.get('airline_code')))
 
+            conn.commit()
+            messages.success(request, "Registrasi berhasil, silakan login.")
             return redirect('authentication:login')
 
         except Exception as e:
-            messages.error(request, f"Gagal mendaftar: {str(e)}")
+            if conn:
+                conn.rollback()
+            if hasattr(e, 'message'):
+                messages.error(request, e.message)
+            elif hasattr(e, 'args') and len(e.args) > 0 and isinstance(e.args[0], dict):
+                pesan = e.args[0].get('message', str(e))
+                messages.error(request, pesan)
+            else:
+                messages.error(request, f"Gagal mendaftar: {str(e)}")
+                
             return redirect('authentication:register')
+            
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
 
+    daftar_maskapai = []
+    conn = None
     try:
-        maskapai_res = settings.SUPABASE_CLIENT.table('maskapai').select('*').execute()
-        daftar_maskapai = maskapai_res.data
-    except Exception:
-        daftar_maskapai = []
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT * FROM maskapai")
+        daftar_maskapai = cursor.fetchall()
+    except Exception as e:
+        print(f"Gagal load maskapai: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
 
     return render(request, 'authentication/register.html', {'maskapai_list': daftar_maskapai})
 
@@ -71,41 +92,42 @@ def login(request):
         return redirect('main:dashboard')
 
     if request.method == 'POST':
-        email = request.POST.get('email')
+        email = request.POST.get('email').strip().lower()
         password = request.POST.get('password')
 
+        conn = None
         try:
-            user_check = settings.SUPABASE_CLIENT.table('pengguna').select('*').eq('email', email).execute()
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-            if len(user_check.data) == 0:
+            cursor.execute("SELECT * FROM pengguna WHERE email = %s", (email,))
+            user_data = cursor.fetchone()
+
+            if not user_data:
                 messages.error(request, "Email atau password salah, silakan coba lagi.")
                 return redirect('authentication:login')
 
-            user_data = user_check.data[0]
             db_password = user_data['password']
 
             if db_password.startswith('$2b$12$'):
                 is_password_correct = (db_password == f"$2b$12${password}")
-            
             else:
                 is_password_correct = check_password(password, db_password)
-                
 
             if is_password_correct:
                 salutation = user_data['salutation']
                 last_name = user_data['last_name']
-                
                 first_mid_name = user_data['first_mid_name']
                 first_name = first_mid_name.split()[0] if first_mid_name else ""
-                
                 full_name = f"{salutation} {first_name} {last_name}"
 
                 request.session['user_email'] = email
                 request.session['user_full_name'] = full_name
-                staf_check = settings.SUPABASE_CLIENT.table('staf').select('*').eq('email', email).execute()
-                
-                
-                if len(staf_check.data) > 0:
+
+                cursor.execute("SELECT * FROM staf WHERE email = %s", (email,))
+                staf_data = cursor.fetchone()
+
+                if staf_data:
                     request.session['role'] = 'staf'
                 else:
                     request.session['role'] = 'member'
@@ -116,18 +138,19 @@ def login(request):
                 return redirect('authentication:login')
 
         except Exception as e:
-            print(f"ERROR LOGIN SUPABASE: {e}")
+            print(f"ERROR LOGIN PSYCOPG2: {e}")
             messages.error(request, "Terjadi kesalahan pada sistem database.")
             return redirect('authentication:login')
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
 
     return render(request, 'authentication/login.html')
 
 
 def logout(request):
-    try:
-        settings.SUPABASE_CLIENT.auth.sign_out()
-    except Exception:
-        pass
-    
+    # Karena kita tidak menggunakan sistem otentikasi internal Supabase,
+    # Kita cukup menghapus session dari Django saja.
     request.session.flush()
     return redirect('/')
