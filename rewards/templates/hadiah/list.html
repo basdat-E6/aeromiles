@@ -16,47 +16,46 @@
     <!-- Table -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
+        <table class="w-full text-xs text-left">
           <thead>
             <tr class="border-b border-gray-200">
-              <th class="px-6 py-4 text-gray-500 font-semibold">Kode</th>
-              <th class="px-6 py-4 text-gray-500 font-semibold">Nama</th>
-              <th class="px-6 py-4 text-gray-500 font-semibold">Deskripsi</th>
-              <th class="px-6 py-4 text-gray-500 font-semibold">Penyedia</th>
-              <th class="px-6 py-4 text-gray-500 font-semibold">Miles</th>
-              <th class="px-6 py-4 text-gray-500 font-semibold">Periode</th>
-              <th class="px-6 py-4 text-gray-500 font-semibold text-right">Aksi</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold">Kode</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold">Nama</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold">Deskripsi</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold">Penyedia</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold">Miles</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold">Periode</th>
+              <th class="px-3 py-3 text-gray-500 font-semibold text-right">Aksi</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
             {% for h in hadiah %}
             <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">{{ h.kode }}</td>
-              <td class="px-6 py-4 text-gray-800 whitespace-nowrap">{{ h.nama }}</td>
-              <td class="px-6 py-4 text-gray-500 max-w-xs truncate">{{ h.deskripsi|truncatechars:25 }}</td>
-              <td class="px-6 py-4 text-gray-700 whitespace-nowrap">
-                {{ h.penyedia.nama_penyedia }}
-                <span class="ml-1 px-2 py-0.5 text-xs font-medium text-gray-500 border border-gray-300 rounded-full">
-                  {{ h.penyedia.tipe }}
+              <td class="px-3 py-3 font-bold text-gray-900 whitespace-nowrap">{{ h.kode_hadiah }}</td>
+              <td class="px-3 py-3 text-gray-800 whitespace-nowrap">{{ h.nama }}</td>
+              <td class="px-3 py-3 text-gray-500 max-w-[160px] truncate">{{ h.deskripsi|truncatechars:20 }}</td>
+              <td class="px-3 py-3 text-gray-700 whitespace-nowrap">
+                {{ h.nama_penyedia }}
+                <span class="ml-1 px-1.5 py-0.5 text-xs font-medium text-gray-500 border border-gray-300 rounded-full">
+                  {{ h.tipe_penyedia }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-gray-800 whitespace-nowrap">{{ h.miles|floatformat:"0g" }}</td>
-              <td class="px-6 py-4 text-gray-500 whitespace-nowrap">
-                {{ h.valid_start|date:"Y-m-d" }} — {{ h.valid_end|date:"Y-m-d" }}
+              <td class="px-3 py-3 text-gray-800 whitespace-nowrap">{{ h.miles }}</td>
+              <td class="px-3 py-3 text-gray-500 whitespace-nowrap">
+                {{ h.valid_start_date }} — {{ h.program_end }}
               </td>
-              <td class="px-6 py-4">
-                <div class="flex items-center justify-end gap-3">
-                  <!-- Edit -->
+              <td class="px-3 py-3">
+                <div class="flex items-center justify-end gap-2">
                   <button title="Edit"
                     onclick='openEditModal(
-                      {{ h.pk }},
-                      "{{ h.kode }}",
-                      {{ h.penyedia.id }},
+                      "{{ h.kode_hadiah }}",
+                      "{{ h.kode_hadiah }}",
+                      {{ h.id_penyedia }},
                       "{{ h.nama|escapejs }}",
                       "{{ h.deskripsi|escapejs }}",
                       {{ h.miles }},
-                      "{{ h.valid_start|date:"Y-m-d" }}",
-                      "{{ h.valid_end|date:"Y-m-d" }}"
+                      "{{ h.valid_start_date }}",
+                      "{{ h.program_end }}"
                     )'
                     class="text-gray-400 hover:text-gray-700 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -65,8 +64,7 @@
                         fill="currentColor" />
                     </svg>
                   </button>
-                  <!-- Delete -->
-                  <button title="Hapus" onclick='openHapusModal({{ h.pk }})'
+                  <button title="Hapus" onclick='openHapusModal("{{ h.kode_hadiah }}")'
                     class="text-red-400 hover:text-red-600 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -80,7 +78,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="7" class="px-6 py-10 text-center text-gray-400 text-sm">Belum ada hadiah.</td>
+              <td colspan="7" class="px-3 py-10 text-center text-gray-400 text-sm">Belum ada hadiah.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -97,7 +95,7 @@
       <h3 class="text-base font-bold text-gray-900">Tambah Hadiah Baru</h3>
       <button onclick="closeModal('modalTambah')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
     </div>
-    <form method="POST" action="{% url 'rewards:hadiah_create' %}" class="px-6 py-5 space-y-4" onsubmit="return validateTanggal('tambah-start', 'tambah-end')">
+    <form method="POST" action="{% url 'rewards:hadiah_create' %}" class="px-6 py-5 space-y-4">
       {% csrf_token %}
       <div>
         <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Hadiah</label>
@@ -112,12 +110,12 @@
             <option value="">Pilih penyedia</option>
             <optgroup label="── Maskapai ──">
               {% for p in penyedia_list %}{% if p.tipe == 'airline' %}
-              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              <option value="{{ p.id_penyedia }}">{{ p.nama_penyedia }}</option>
               {% endif %}{% endfor %}
             </optgroup>
             <optgroup label="── Mitra ──">
               {% for p in penyedia_list %}{% if p.tipe == 'partner' %}
-              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              <option value="{{ p.id_penyedia }}">{{ p.nama_penyedia }}</option>
               {% endif %}{% endfor %}
             </optgroup>
           </select>
@@ -136,18 +134,15 @@
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="block text-xs font-semibold text-gray-700 mb-1">Valid Start</label>
-          <input type="date" id="tambah-start" name="valid_start" required
-            onchange="updateMinEnd('tambah-start', 'tambah-end')"
+          <input type="date" name="valid_start" required
             class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-700 mb-1">Program End</label>
-          <input type="date" id="tambah-end" name="valid_end" required
-            onchange="validateTanggal('tambah-start', 'tambah-end')"
+          <input type="date" name="valid_end" required
             class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
         </div>
       </div>
-      <p id="tambah-date-error" class="text-red-500 text-xs hidden">Tanggal akhir tidak boleh lebih awal dari tanggal mulai.</p>
       <div class="flex justify-end pt-1">
         <button type="submit"
           class="bg-[#1a3a5c] hover:bg-[#0f2844] text-white text-sm font-semibold px-6 py-2 rounded-md transition">
@@ -165,7 +160,7 @@
       <h3 class="text-base font-bold text-gray-900">Edit Hadiah</h3>
       <button onclick="closeModal('modalEdit')" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
     </div>
-    <form method="POST" id="formEdit" class="px-6 py-5 space-y-4" onsubmit="return validateTanggal('edit-start', 'edit-end')">
+    <form method="POST" id="formEdit" class="px-6 py-5 space-y-4">
       {% csrf_token %}
       <div class="grid grid-cols-2 gap-3">
         <div>
@@ -186,12 +181,12 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
             <optgroup label="── Maskapai ──">
               {% for p in penyedia_list %}{% if p.tipe == 'airline' %}
-              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              <option value="{{ p.id_penyedia }}">{{ p.nama_penyedia }}</option>
               {% endif %}{% endfor %}
             </optgroup>
             <optgroup label="── Mitra ──">
               {% for p in penyedia_list %}{% if p.tipe == 'partner' %}
-              <option value="{{ p.id }}">{{ p.nama_penyedia }}</option>
+              <option value="{{ p.id_penyedia }}">{{ p.nama_penyedia }}</option>
               {% endif %}{% endfor %}
             </optgroup>
           </select>
@@ -211,17 +206,14 @@
         <div>
           <label class="block text-xs font-semibold text-gray-700 mb-1">Valid Start</label>
           <input type="date" id="edit-start" name="valid_start" required
-            onchange="updateMinEnd('edit-start', 'edit-end')"
             class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-700 mb-1">Program End</label>
           <input type="date" id="edit-end" name="valid_end" required
-            onchange="validateTanggal('edit-start', 'edit-end')"
             class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
         </div>
       </div>
-      <p id="edit-date-error" class="text-red-500 text-xs hidden">Tanggal akhir tidak boleh lebih awal dari tanggal mulai.</p>
       <div class="flex justify-end pt-1">
         <button type="submit"
           class="bg-[#1a3a5c] hover:bg-[#0f2844] text-white text-sm font-semibold px-6 py-2 rounded-md transition">
@@ -259,56 +251,20 @@
   function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
   function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-  // Saat valid_start berubah, set min pada valid_end agar tidak bisa pilih tanggal sebelumnya
-  function updateMinEnd(startId, endId) {
-    var startVal = document.getElementById(startId).value;
-    var endInput = document.getElementById(endId);
-    if (startVal) {
-      endInput.min = startVal;
-      // Jika tanggal akhir sudah diisi dan lebih kecil dari start, reset
-      if (endInput.value && endInput.value < startVal) {
-        endInput.value = '';
-      }
-    }
-    validateTanggal(startId, endId);
-  }
-
-  // Validasi sebelum submit: tanggal akhir tidak boleh lebih awal dari tanggal mulai
-  function validateTanggal(startId, endId) {
-    var prefix = startId.replace('-start', '');
-    var startVal = document.getElementById(startId).value;
-    var endVal   = document.getElementById(endId).value;
-    var errEl    = document.getElementById(prefix + '-date-error');
-    var endInput = document.getElementById(endId);
-
-    if (startVal && endVal && endVal < startVal) {
-      if (errEl) errEl.classList.remove('hidden');
-      endInput.classList.add('border-red-500');
-      endInput.classList.remove('border-gray-300');
-      return false; // batalkan submit
-    }
-    if (errEl) errEl.classList.add('hidden');
-    endInput.classList.remove('border-red-500');
-    endInput.classList.add('border-gray-300');
-    return true;
-  }
-
-  function openEditModal(pk, kode, penyediaId, nama, deskripsi, miles, validStart, validEnd) {
-    document.getElementById('edit-kode').value      = kode;
+  function openEditModal(kode, kodeDisplay, penyediaId, nama, deskripsi, miles, validStart, validEnd) {
+    document.getElementById('edit-kode').value      = kodeDisplay;
     document.getElementById('edit-nama').value      = nama;
     document.getElementById('edit-deskripsi').value = deskripsi;
     document.getElementById('edit-penyedia').value  = penyediaId;
     document.getElementById('edit-miles').value     = miles;
     document.getElementById('edit-start').value     = validStart;
     document.getElementById('edit-end').value       = validEnd;
-    // Set min supaya Program End tidak bisa lebih awal dari Valid Start
-    document.getElementById('edit-end').min         = validStart;
-    document.getElementById('formEdit').action = "{% url 'rewards:hadiah_update' 0 %}".replace('/0/', '/' + pk + '/');
+    document.getElementById('formEdit').action = "{% url 'rewards:hadiah_update' 'KODE' %}".replace('KODE', kode);
     openModal('modalEdit');
   }
 
-  function openHapusModal(pk) {
-    document.getElementById('formHapus').action = "{% url 'rewards:hadiah_delete' 0 %}".replace('/0/', '/' + pk + '/');
+  function openHapusModal(kode) {
+    document.getElementById('formHapus').action = "{% url 'rewards:hadiah_delete' 'KODE' %}".replace('KODE', kode);
     openModal('modalHapus');
   }
 </script>
