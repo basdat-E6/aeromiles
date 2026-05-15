@@ -1,10 +1,24 @@
 import datetime
 from django.contrib import messages  
 import re
+import psycopg2
+import psycopg2.extras
 from django.shortcuts import render, redirect
+from django.contrib import messages   
 from django.conf import settings
 import psycopg2
 import os
+
+# Helper koneksi psycopg2
+def get_db_connection():
+    db = settings.DATABASES['default']
+    return psycopg2.connect(
+        host=db['HOST'],
+        port=db.get('PORT', 5432),
+        dbname=db['NAME'],
+        user=db['USER'],
+        password=db['PASSWORD'],
+    )
 
 def claim_miles(request):
     user_email = request.session.get("user_email")
@@ -153,30 +167,38 @@ def approve_claim(request, claim_id):
             conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
             cur = conn.cursor()
 
-            cur.execute("SELECT email_member FROM claim_missing_miles WHERE id = %s", (claim_id,))
+            # Ambil data klaim untuk keperluan pesan sukses
+            cur.execute(
+                "SELECT email_member, flight_number FROM claim_missing_miles WHERE id = %s",
+                (claim_id,)
+            )
             row = cur.fetchone()
             if not row:
                 return redirect("miles:claim_miles")
-            email_member = row[0]
 
-            cur.execute("""
-                UPDATE claim_missing_miles 
+            email_member, flight_number = row
+
+            # Update status → trigger akan otomatis tambah 1000 miles ke member
+            cur.execute(
+                """
+                UPDATE claim_missing_miles
                 SET status_penerimaan = 'Disetujui'
                 WHERE id = %s
-            """, (claim_id,))
-
-            cur.execute("""
-                UPDATE member
-                SET total_miles = total_miles + 1000,
-                    award_miles = award_miles + 1000
-                WHERE email = %s
-            """, (email_member,))
+                """,
+                (claim_id,)
+            )
 
             conn.commit()
+            messages.success(
+                request,
+                f'SUKSES: Total miles Member "{email_member}" telah diperbarui. '
+                f'Miles ditambahkan: 1000 miles dari klaim penerbangan "{flight_number}".'
+            )
 
         except Exception as e:
             if conn:
                 conn.rollback()
+            messages.error(request, "Gagal menyetujui klaim.")
             print(f"Gagal setujui klaim: {e}")
         finally:
             if cur:
@@ -296,3 +318,42 @@ def transfer_miles(request):
         print(f"Gagal ambil riwayat transfer: {e}")
 
     return render(request, "miles/transfer_miles.html", context)
+
+def laporan_transaksi(request):
+    # Proteksi: hanya staf
+    if request.session.get("role") != "staf":
+        return redirect("miles:claim_miles")
+
+    context = {"top5_members": [], "pesan_sukses": ""}
+
+    conn   = None
+    cursor = None
+    try:
+        conn   = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Panggil stored procedure get_top5_member_by_miles()
+        cursor.execute("SELECT * FROM get_top5_member_by_miles()")
+        rows = cursor.fetchall()
+        top5 = [dict(row) for row in rows]
+
+        if top5:
+            pertama = top5[0]
+            context["pesan_sukses"] = (
+                f'SUKSES: Daftar Top 5 Member berdasarkan total miles berhasil diperbarui, '
+                f'dengan peringkat pertama "{pertama["email"]}" '
+                f'memiliki {pertama["total_miles"]} miles.'
+            )
+
+        context["top5_members"] = top5
+
+    except Exception as e:
+        print(f"Gagal ambil top 5 member: {e}")
+        messages.error(request, "Gagal memuat data laporan.")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+    return render(request, "miles/laporan_transaksi.html", context)

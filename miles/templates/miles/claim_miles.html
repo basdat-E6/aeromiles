@@ -39,6 +39,20 @@
             {% endif %}
         </div>
 
+        <!-- Django Messages (sukses/error dari approve, reject, dsb) -->
+        {% if messages %}
+        <div class="mb-4 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-lg text-sm font-medium border
+                {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800
+                {% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-700
+                {% else %}bg-blue-50 border-blue-200 text-blue-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead class="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
@@ -425,12 +439,12 @@
 
         const modal = document.getElementById('modal-edit');
         modal.classList.remove('hidden');
-        modal.classList.add('flex'); // ✅ tambahkan ini
+        modal.classList.add('flex');
     }
 
     function openDeleteModal(id, nomor_tiket) {
-        document.getElementById('delete_id').value = id;               // ✅ id sudah benar
-        document.getElementById('delete_nomor_tiket').innerText = nomor_tiket; // ✅ id sudah benar
+        document.getElementById('delete_id').value = id;            
+        document.getElementById('delete_nomor_tiket').innerText = nomor_tiket;
 
         const modal = document.getElementById('modal-delete');
         modal.classList.remove('hidden');

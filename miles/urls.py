@@ -11,4 +11,5 @@ urlpatterns = [
     path("approve-claim/<int:claim_id>/", views.approve_claim, name="approve_claim"),
     path("reject-claim/<int:claim_id>/", views.reject_claim, name="reject_claim"),
     path("transfer-miles/", views.transfer_miles, name="transfer_miles"),
+    path("laporan/", views.laporan_transaksi, name="laporan_transaksi"),
 ]
