@@ -1,19 +1,38 @@
-from django.contrib import messages  
-from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.shortcuts import render, redirect
 from django.conf import settings
 import datetime
 from datetime import date
+import psycopg2
+import psycopg2.extras
+
+
+def _get_conn():
+    """Buat koneksi psycopg2 dari settings Django."""
+    return psycopg2.connect(settings.DATABASES["default"]["OPTIONS"].get(
+        "dsn", settings.DATABASE_URL
+    ))
 
 
 def _get_penyedia_list():
     penyedia = []
     try:
-        maskapai_res = settings.SUPABASE_CLIENT.table("maskapai").select("id_penyedia, nama_maskapai").execute()
-        for m in maskapai_res.data or []:
-            penyedia.append({"id_penyedia": m["id_penyedia"], "nama_penyedia": m["nama_maskapai"], "tipe": "airline"})
-        mitra_res = settings.SUPABASE_CLIENT.table("mitra").select("id_penyedia, nama_mitra").execute()
-        for m in mitra_res.data or []:
-            penyedia.append({"id_penyedia": m["id_penyedia"], "nama_penyedia": m["nama_mitra"], "tipe": "partner"})
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT id_penyedia, nama_maskapai FROM maskapai")
+                for m in cur.fetchall():
+                    penyedia.append({
+                        "id_penyedia": m["id_penyedia"],
+                        "nama_penyedia": m["nama_maskapai"],
+                        "tipe": "airline",
+                    })
+                cur.execute("SELECT id_penyedia, nama_mitra FROM mitra")
+                for m in cur.fetchall():
+                    penyedia.append({
+                        "id_penyedia": m["id_penyedia"],
+                        "nama_penyedia": m["nama_mitra"],
+                        "tipe": "partner",
+                    })
         penyedia.sort(key=lambda x: (x["tipe"], x["id_penyedia"]))
     except Exception as e:
         print(f"Error fetch penyedia: {e}")
@@ -25,12 +44,15 @@ def hadiah_list(request):
     penyedia_list = _get_penyedia_list()
     penyedia_map = {p["id_penyedia"]: p for p in penyedia_list}
     try:
-        h_res = settings.SUPABASE_CLIENT.table("hadiah").select("*").order("kode_hadiah").execute()
-        for h in h_res.data or []:
-            p = penyedia_map.get(h.get("id_penyedia"), {})
-            h["nama_penyedia"] = p.get("nama_penyedia", "-")
-            h["tipe_penyedia"] = p.get("tipe", "-")
-            hadiah.append(h)
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM hadiah ORDER BY kode_hadiah")
+                for h in cur.fetchall():
+                    h = dict(h)
+                    p = penyedia_map.get(h.get("id_penyedia"), {})
+                    h["nama_penyedia"] = p.get("nama_penyedia", "-")
+                    h["tipe_penyedia"] = p.get("tipe", "-")
+                    hadiah.append(h)
     except Exception as e:
         print(f"Error fetch hadiah: {e}")
     return render(request, "hadiah/list.html", {"hadiah": hadiah, "penyedia_list": penyedia_list})
@@ -46,14 +68,19 @@ def hadiah_create(request):
         valid_end = request.POST.get("valid_end")
         if nama and penyedia_id and miles and deskripsi and valid_start and valid_end:
             try:
-                last = settings.SUPABASE_CLIENT.table("hadiah").select("kode_hadiah").order("kode_hadiah", desc=True).limit(1).execute()
-                num = int(last.data[0]["kode_hadiah"].split("-")[1]) + 1 if last.data else 1
-                kode = f"RWD-{num:03d}"
-                settings.SUPABASE_CLIENT.table("hadiah").insert({
-                    "kode_hadiah": kode, "nama": nama, "id_penyedia": int(penyedia_id),
-                    "miles": int(miles), "deskripsi": deskripsi,
-                    "valid_start_date": valid_start, "program_end": valid_end,
-                }).execute()
+                with _get_conn() as conn:
+                    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                        cur.execute("SELECT kode_hadiah FROM hadiah ORDER BY kode_hadiah DESC LIMIT 1")
+                        last = cur.fetchone()
+                        num = int(last["kode_hadiah"].split("-")[1]) + 1 if last else 1
+                        kode = f"RWD-{num:03d}"
+                        cur.execute(
+                            """
+                            INSERT INTO hadiah (kode_hadiah, nama, id_penyedia, miles, deskripsi, valid_start_date, program_end)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (kode, nama, int(penyedia_id), int(miles), deskripsi, valid_start, valid_end),
+                        )
             except Exception as e:
                 print(f"Error create hadiah: {e}")
     return redirect("rewards:hadiah_list")
@@ -69,10 +96,17 @@ def hadiah_update(request, pk):
         valid_end = request.POST.get("valid_end")
         if nama and penyedia_id and miles and deskripsi and valid_start and valid_end:
             try:
-                settings.SUPABASE_CLIENT.table("hadiah").update({
-                    "nama": nama, "id_penyedia": int(penyedia_id), "miles": int(miles),
-                    "deskripsi": deskripsi, "valid_start_date": valid_start, "program_end": valid_end,
-                }).eq("kode_hadiah", pk).execute()
+                with _get_conn() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE hadiah
+                            SET nama=%s, id_penyedia=%s, miles=%s, deskripsi=%s,
+                                valid_start_date=%s, program_end=%s
+                            WHERE kode_hadiah=%s
+                            """,
+                            (nama, int(penyedia_id), int(miles), deskripsi, valid_start, valid_end, pk),
+                        )
             except Exception as e:
                 print(f"Error update hadiah: {e}")
     return redirect("rewards:hadiah_list")
@@ -81,7 +115,9 @@ def hadiah_update(request, pk):
 def hadiah_delete(request, pk):
     if request.method == "POST":
         try:
-            settings.SUPABASE_CLIENT.table("hadiah").delete().eq("kode_hadiah", pk).execute()
+            with _get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM hadiah WHERE kode_hadiah=%s", (pk,))
         except Exception as e:
             print(f"Error delete hadiah: {e}")
     return redirect("rewards:hadiah_list")
@@ -90,8 +126,10 @@ def hadiah_delete(request, pk):
 def mitra_list(request):
     mitras = []
     try:
-        res = settings.SUPABASE_CLIENT.table("mitra").select("*").order("nama_mitra").execute()
-        mitras = res.data or []
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM mitra ORDER BY nama_mitra")
+                mitras = [dict(r) for r in cur.fetchall()]
     except Exception as e:
         print(f"Error fetch mitra: {e}")
     return render(request, "mitra/list.html", {"mitras": mitras})
@@ -104,16 +142,24 @@ def mitra_create(request):
         tanggal_kerja_sama = request.POST.get("tanggal_kerja_sama")
         if email_mitra and nama and tanggal_kerja_sama:
             try:
-                cek = settings.SUPABASE_CLIENT.table("mitra").select("email_mitra").eq("email_mitra", email_mitra).execute()
-                if cek.data:
-                    return redirect("rewards:mitra_list")
-                max_res = settings.SUPABASE_CLIENT.table("penyedia").select("id").order("id", desc=True).limit(1).execute()
-                next_id = (max_res.data[0]["id"] + 1) if max_res.data else 1
-                settings.SUPABASE_CLIENT.table("penyedia").insert({"id": next_id}).execute()
-                settings.SUPABASE_CLIENT.table("mitra").insert({
-                    "email_mitra": email_mitra, "id_penyedia": next_id,
-                    "nama_mitra": nama, "tanggal_kerja_sama": tanggal_kerja_sama,
-                }).execute()
+                with _get_conn() as conn:
+                    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                        cur.execute("SELECT email_mitra FROM mitra WHERE email_mitra=%s", (email_mitra,))
+                        if cur.fetchone():
+                            return redirect("rewards:mitra_list")
+
+                        cur.execute("SELECT id FROM penyedia ORDER BY id DESC LIMIT 1")
+                        max_row = cur.fetchone()
+                        next_id = (max_row["id"] + 1) if max_row else 1
+
+                        cur.execute("INSERT INTO penyedia (id) VALUES (%s)", (next_id,))
+                        cur.execute(
+                            """
+                            INSERT INTO mitra (email_mitra, id_penyedia, nama_mitra, tanggal_kerja_sama)
+                            VALUES (%s, %s, %s, %s)
+                            """,
+                            (email_mitra, next_id, nama, tanggal_kerja_sama),
+                        )
             except Exception as e:
                 print(f"Error create mitra: {e}")
     return redirect("rewards:mitra_list")
@@ -125,9 +171,12 @@ def mitra_update(request, email):
         tanggal_kerja_sama = request.POST.get("tanggal_kerja_sama")
         if nama and tanggal_kerja_sama:
             try:
-                settings.SUPABASE_CLIENT.table("mitra").update({
-                    "nama_mitra": nama, "tanggal_kerja_sama": tanggal_kerja_sama,
-                }).eq("email_mitra", email).execute()
+                with _get_conn() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            "UPDATE mitra SET nama_mitra=%s, tanggal_kerja_sama=%s WHERE email_mitra=%s",
+                            (nama, tanggal_kerja_sama, email),
+                        )
             except Exception as e:
                 print(f"Error update mitra: {e}")
     return redirect("rewards:mitra_list")
@@ -136,10 +185,13 @@ def mitra_update(request, email):
 def mitra_delete(request, email):
     if request.method == "POST":
         try:
-            mitra_res = settings.SUPABASE_CLIENT.table("mitra").select("id_penyedia").eq("email_mitra", email).execute()
-            settings.SUPABASE_CLIENT.table("mitra").delete().eq("email_mitra", email).execute()
-            if mitra_res.data:
-                settings.SUPABASE_CLIENT.table("penyedia").delete().eq("id", mitra_res.data[0]["id_penyedia"]).execute()
+            with _get_conn() as conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute("SELECT id_penyedia FROM mitra WHERE email_mitra=%s", (email,))
+                    mitra_row = cur.fetchone()
+                    cur.execute("DELETE FROM mitra WHERE email_mitra=%s", (email,))
+                    if mitra_row:
+                        cur.execute("DELETE FROM penyedia WHERE id=%s", (mitra_row["id_penyedia"],))
         except Exception as e:
             print(f"Error delete mitra: {e}")
     return redirect("rewards:mitra_list")
@@ -159,39 +211,47 @@ def katalog(request):
 
         kode_hadiah = request.POST.get("kode_hadiah")
         try:
-            hadiah_res = settings.SUPABASE_CLIENT.table("hadiah") \
-                .select("miles, nama, valid_start_date, program_end") \
-                .eq("kode_hadiah", kode_hadiah).single().execute()
+            with _get_conn() as conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute(
+                        "SELECT miles, nama, valid_start_date, program_end FROM hadiah WHERE kode_hadiah=%s",
+                        (kode_hadiah,),
+                    )
+                    hadiah_row = cur.fetchone()
 
-            if not hadiah_res.data:
-                messages.error(request, "Hadiah tidak ditemukan.")
-                return redirect("rewards:katalog")
+                    if not hadiah_row:
+                        messages.error(request, "Hadiah tidak ditemukan.")
+                        return redirect("rewards:katalog")
 
-            hari_ini = date.today()
-            valid_start = date.fromisoformat(hadiah_res.data["valid_start_date"])
-            program_end = date.fromisoformat(hadiah_res.data["program_end"])
-            if not (valid_start <= hari_ini <= program_end):
-                messages.error(request, f"Hadiah \"{hadiah_res.data['nama']}\" tidak tersedia pada periode ini.")
-                return redirect("rewards:katalog")
+                    hari_ini = date.today()
+                    valid_start = date.fromisoformat(str(hadiah_row["valid_start_date"]))
+                    program_end = date.fromisoformat(str(hadiah_row["program_end"]))
 
-            harga_miles = hadiah_res.data["miles"]
-            member_res = settings.SUPABASE_CLIENT.table("member").select("award_miles").eq("email", user_email).single().execute()
-            saldo_sekarang = member_res.data.get("award_miles", 0)
+                    if not (valid_start <= hari_ini <= program_end):
+                        messages.error(request, f"Hadiah \"{hadiah_row['nama']}\" tidak tersedia pada periode ini.")
+                        return redirect("rewards:katalog")
 
-            if saldo_sekarang < harga_miles:
-                messages.error(request, f"Saldo award miles tidak mencukupi. Dibutuhkan {harga_miles} miles, saldo Anda: {saldo_sekarang} miles.")
-                return redirect("rewards:katalog")
+                    harga_miles = hadiah_row["miles"]
 
-            waktu_sekarang = datetime.datetime.now().isoformat()
-            settings.SUPABASE_CLIENT.table("redeem").insert({
-                "email_member": user_email, "kode_hadiah": kode_hadiah, "timestamp": waktu_sekarang
-            }).execute()
+                    cur.execute("SELECT award_miles FROM member WHERE email=%s", (user_email,))
+                    member_row = cur.fetchone()
+                    saldo_sekarang = member_row.get("award_miles", 0) if member_row else 0
 
-            settings.SUPABASE_CLIENT.table("member").update({
-                "award_miles": saldo_sekarang - harga_miles
-            }).eq("email", user_email).execute()
+                    if saldo_sekarang < harga_miles:
+                        messages.error(request, f"Saldo award miles tidak mencukupi. Dibutuhkan {harga_miles} miles, saldo Anda: {saldo_sekarang} miles.")
+                        return redirect("rewards:katalog")
 
-            messages.success(request, f"SUKSES: Redeem hadiah \"{hadiah_res.data['nama']}\" berhasil. Award miles Anda berkurang {harga_miles} miles.")
+                    waktu_sekarang = datetime.datetime.now().isoformat()
+                    cur.execute(
+                        "INSERT INTO redeem (email_member, kode_hadiah, timestamp) VALUES (%s, %s, %s)",
+                        (user_email, kode_hadiah, waktu_sekarang),
+                    )
+                    cur.execute(
+                        "UPDATE member SET award_miles=%s WHERE email=%s",
+                        (saldo_sekarang - harga_miles, user_email),
+                    )
+
+            messages.success(request, f"SUKSES: Redeem hadiah \"{hadiah_row['nama']}\" berhasil. Award miles Anda berkurang {harga_miles} miles.")
             return redirect("rewards:katalog")
 
         except Exception as e:
@@ -202,38 +262,50 @@ def katalog(request):
     context = {"award_miles": 0, "hadiah_list": [], "riwayat_redeem": []}
 
     try:
-        if role == "member":
-            member_res = settings.SUPABASE_CLIENT.table("member").select("award_miles").eq("email", user_email).single().execute()
-            if member_res.data:
-                context["award_miles"] = member_res.data.get("award_miles", 0)
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                if role == "member":
+                    cur.execute("SELECT award_miles FROM member WHERE email=%s", (user_email,))
+                    member_row = cur.fetchone()
+                    if member_row:
+                        context["award_miles"] = member_row.get("award_miles", 0)
 
-        hari_ini = date.today().isoformat()
-        hadiah_res = settings.SUPABASE_CLIENT.table("hadiah") \
-            .select("kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia") \
-            .gte("program_end", hari_ini).execute()
+                hari_ini = date.today().isoformat()
+                cur.execute(
+                    """
+                    SELECT kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia
+                    FROM hadiah WHERE program_end >= %s
+                    """,
+                    (hari_ini,),
+                )
+                daftar_hadiah = [dict(r) for r in cur.fetchall()]
+                for h in daftar_hadiah:
+                    try:
+                        cur.execute("SELECT nama_mitra FROM mitra WHERE id_penyedia=%s", (h["id_penyedia"],))
+                        mitra_row = cur.fetchone()
+                        h["nama_mitra"] = mitra_row["nama_mitra"] if mitra_row else "-"
+                    except Exception:
+                        h["nama_mitra"] = "-"
+                context["hadiah_list"] = daftar_hadiah
 
-        if hadiah_res.data:
-            daftar_hadiah = hadiah_res.data
-            for h in daftar_hadiah:
-                try:
-                    mitra_res = settings.SUPABASE_CLIENT.table("mitra").select("nama_mitra").eq("id_penyedia", h["id_penyedia"]).single().execute()
-                    h['nama_mitra'] = mitra_res.data.get("nama_mitra", "-") if mitra_res.data else "-"
-                except:
-                    h['nama_mitra'] = "-"
-            context["hadiah_list"] = daftar_hadiah
-
-        riwayat_res = settings.SUPABASE_CLIENT.table("redeem") \
-            .select("timestamp, kode_hadiah, hadiah(miles, nama)") \
-            .eq("email_member", user_email).order("timestamp", desc=True).execute()
-
-        riwayat_list = []
-        for r in riwayat_res.data or []:
-            riwayat_list.append({
-                "nama_hadiah": r.get("hadiah", {}).get("nama", r["kode_hadiah"]) if r.get("hadiah") else r["kode_hadiah"],
-                "miles": r.get("hadiah", {}).get("miles", 0) if r.get("hadiah") else 0,
-                "tanggal": r["timestamp"][:16].replace("T", " "),
-            })
-        context["riwayat_redeem"] = riwayat_list
+                cur.execute(
+                    """
+                    SELECT r.timestamp, r.kode_hadiah, h.miles, h.nama
+                    FROM redeem r
+                    LEFT JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+                    WHERE r.email_member=%s
+                    ORDER BY r.timestamp DESC
+                    """,
+                    (user_email,),
+                )
+                riwayat_list = []
+                for r in cur.fetchall():
+                    riwayat_list.append({
+                        "nama_hadiah": r["nama"] if r["nama"] else r["kode_hadiah"],
+                        "miles": r["miles"] if r["miles"] else 0,
+                        "tanggal": str(r["timestamp"])[:16].replace("T", " "),
+                    })
+                context["riwayat_redeem"] = riwayat_list
 
     except Exception as e:
         print(f"Error fetch katalog: {e}")
@@ -257,22 +329,37 @@ def beli_package(request):
         waktu_sekarang = datetime.datetime.now().isoformat()
 
         try:
-            pkg_res = settings.SUPABASE_CLIENT.table("award_miles_package").select("jumlah_award_miles").eq("id", id_package).single().execute()
-            if not pkg_res.data:
-                messages.error(request, "Paket tidak ditemukan.")
-                return redirect("rewards:beli_package")
+            with _get_conn() as conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute(
+                        "SELECT jumlah_award_miles FROM award_miles_package WHERE id=%s",
+                        (id_package,),
+                    )
+                    pkg_row = cur.fetchone()
+                    if not pkg_row:
+                        messages.error(request, "Paket tidak ditemukan.")
+                        return redirect("rewards:beli_package")
 
-            jumlah_miles = pkg_res.data["jumlah_award_miles"]
-            settings.SUPABASE_CLIENT.table("member_award_miles_package").insert({
-                "id_award_miles_package": id_package, "email_member": user_email, "timestamp": waktu_sekarang
-            }).execute()
+                    jumlah_miles = pkg_row["jumlah_award_miles"]
+                    cur.execute(
+                        """
+                        INSERT INTO member_award_miles_package (id_award_miles_package, email_member, timestamp)
+                        VALUES (%s, %s, %s)
+                        """,
+                        (id_package, user_email, waktu_sekarang),
+                    )
 
-            member_res = settings.SUPABASE_CLIENT.table("member").select("award_miles, total_miles").eq("email", user_email).single().execute()
-            award_miles_baru = (member_res.data.get("award_miles") or 0) + jumlah_miles
-            total_miles_baru = (member_res.data.get("total_miles") or 0) + jumlah_miles
-            settings.SUPABASE_CLIENT.table("member").update({
-                "award_miles": award_miles_baru, "total_miles": total_miles_baru
-            }).eq("email", user_email).execute()
+                    cur.execute(
+                        "SELECT award_miles, total_miles FROM member WHERE email=%s",
+                        (user_email,),
+                    )
+                    member_row = cur.fetchone()
+                    award_miles_baru = (member_row.get("award_miles") or 0) + jumlah_miles
+                    total_miles_baru = (member_row.get("total_miles") or 0) + jumlah_miles
+                    cur.execute(
+                        "UPDATE member SET award_miles=%s, total_miles=%s WHERE email=%s",
+                        (award_miles_baru, total_miles_baru, user_email),
+                    )
 
             messages.success(request, f"SUKSES: Pembelian package berhasil. Award miles dan total miles Anda bertambah {jumlah_miles:,} miles.")
 
@@ -284,12 +371,15 @@ def beli_package(request):
 
     context = {"packages": [], "award_miles": 0}
     try:
-        pkg_res = settings.SUPABASE_CLIENT.table("award_miles_package").select("*").execute()
-        if pkg_res.data:
-            context["packages"] = pkg_res.data
-        member_res = settings.SUPABASE_CLIENT.table("member").select("award_miles").eq("email", user_email).single().execute()
-        if member_res.data:
-            context["award_miles"] = member_res.data.get("award_miles", 0)
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM award_miles_package")
+                context["packages"] = [dict(r) for r in cur.fetchall()]
+
+                cur.execute("SELECT award_miles FROM member WHERE email=%s", (user_email,))
+                member_row = cur.fetchone()
+                if member_row:
+                    context["award_miles"] = member_row.get("award_miles", 0)
     except Exception as e:
         print(f"Error fetch packages: {e}")
 
@@ -301,18 +391,22 @@ def info_tier(request):
     context = {"tiers": [], "id_tier_saya": None, "total_miles": 0}
 
     try:
-        tier_res = settings.SUPABASE_CLIENT.table("tier").select("*").execute()
-        if tier_res.data:
-            tiers = tier_res.data
-            tiers.sort(key=lambda x: x.get('id_tier', ''))
-            context["tiers"] = tiers
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM tier")
+                tiers = [dict(r) for r in cur.fetchall()]
+                tiers.sort(key=lambda x: x.get("id_tier", ""))
+                context["tiers"] = tiers
 
-        if user_email:
-            member_res = settings.SUPABASE_CLIENT.table("member").select("id_tier, total_miles").eq("email", user_email).single().execute()
-            if member_res.data:
-                context["id_tier_saya"] = member_res.data.get("id_tier")
-                context["total_miles"] = member_res.data.get("total_miles", 0)
-
+                if user_email:
+                    cur.execute(
+                        "SELECT id_tier, total_miles FROM member WHERE email=%s",
+                        (user_email,),
+                    )
+                    member_row = cur.fetchone()
+                    if member_row:
+                        context["id_tier_saya"] = member_row.get("id_tier")
+                        context["total_miles"] = member_row.get("total_miles", 0)
     except Exception as e:
         print(f"Error fetch info tier: {e}")
 
@@ -345,86 +439,132 @@ def laporan_transaksi(request):
     transaksi_gabungan = []
 
     try:
-        pkg_query = settings.SUPABASE_CLIENT.table('member_award_miles_package') \
-            .select('timestamp, email_member, id_award_miles_package, award_miles_package(jumlah_award_miles)')
-        if role == 'member':
-            pkg_query = pkg_query.eq('email_member', user_email)
-        pkg_res = pkg_query.execute()
-        for p in pkg_res.data or []:
-            miles = p.get('award_miles_package', {}).get('jumlah_award_miles', 0) if p.get('award_miles_package') else 0
-            transaksi_gabungan.append({
-                'jenis': 'Beli Package', 'aktor': p['email_member'],
-                'detail': f"Beli {p['id_award_miles_package']}", 'miles': f"+{miles:,}",
-                'is_negative': False, 'raw_time': p['timestamp'],
-                'tanggal': p['timestamp'][:16].replace('T', ' '), 'dapat_hapus': True,
-            })
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
 
-        rdm_query = settings.SUPABASE_CLIENT.table('redeem').select('timestamp, email_member, kode_hadiah, hadiah(miles, nama)')
-        if role == 'member':
-            rdm_query = rdm_query.eq('email_member', user_email)
-        rdm_res = rdm_query.execute()
-        for r in rdm_res.data or []:
-            miles = r.get('hadiah', {}).get('miles', 0) if r.get('hadiah') else 0
-            nama_hadiah = r.get('hadiah', {}).get('nama', r['kode_hadiah']) if r.get('hadiah') else r['kode_hadiah']
-            transaksi_gabungan.append({
-                'jenis': 'Redeem Hadiah', 'aktor': r['email_member'],
-                'detail': f"Tukar {nama_hadiah}", 'miles': f"-{miles:,}",
-                'is_negative': True, 'raw_time': r['timestamp'],
-                'tanggal': r['timestamp'][:16].replace('T', ' '), 'dapat_hapus': True,
-            })
+                # Beli Package
+                if role == "member":
+                    cur.execute(
+                        """
+                        SELECT p.timestamp, p.email_member, p.id_award_miles_package,
+                               a.jumlah_award_miles
+                        FROM member_award_miles_package p
+                        LEFT JOIN award_miles_package a ON a.id = p.id_award_miles_package
+                        WHERE p.email_member = %s
+                        """,
+                        (user_email,),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT p.timestamp, p.email_member, p.id_award_miles_package,
+                               a.jumlah_award_miles
+                        FROM member_award_miles_package p
+                        LEFT JOIN award_miles_package a ON a.id = p.id_award_miles_package
+                        """
+                    )
+                for p in cur.fetchall():
+                    miles = p["jumlah_award_miles"] or 0
+                    transaksi_gabungan.append({
+                        "jenis": "Beli Package", "aktor": p["email_member"],
+                        "detail": f"Beli {p['id_award_miles_package']}", "miles": f"+{miles:,}",
+                        "is_negative": False, "raw_time": str(p["timestamp"]),
+                        "tanggal": str(p["timestamp"])[:16].replace("T", " "), "dapat_hapus": True,
+                    })
 
-        if role == 'member':
-            tf_out = settings.SUPABASE_CLIENT.table('transfer').select('*').eq('email_member_1', user_email).execute()
-            for t in tf_out.data or []:
-                transaksi_gabungan.append({
-                    'jenis': 'Transfer Keluar', 'aktor': t['email_member_2'],
-                    'detail': t.get('catatan', '-'), 'miles': f"-{t['jumlah']:,}",
-                    'is_negative': True, 'raw_time': t['timestamp'],
-                    'tanggal': t['timestamp'][:16].replace('T', ' '), 'dapat_hapus': True,
-                })
-            tf_in = settings.SUPABASE_CLIENT.table('transfer').select('*').eq('email_member_2', user_email).execute()
-            for t in tf_in.data or []:
-                transaksi_gabungan.append({
-                    'jenis': 'Transfer Masuk', 'aktor': t['email_member_1'],
-                    'detail': t.get('catatan', '-'), 'miles': f"+{t['jumlah']:,}",
-                    'is_negative': False, 'raw_time': t['timestamp'],
-                    'tanggal': t['timestamp'][:16].replace('T', ' '), 'dapat_hapus': True,
-                })
-        else:
-            tf_res = settings.SUPABASE_CLIENT.table('transfer').select('*').execute()
-            for t in tf_res.data or []:
-                transaksi_gabungan.append({
-                    'jenis': 'Transfer Miles', 'aktor': f"{t['email_member_1']} → {t['email_member_2']}",
-                    'detail': t.get('catatan', '-'), 'miles': f"{t['jumlah']:,}",
-                    'is_negative': False, 'raw_time': t['timestamp'],
-                    'tanggal': t['timestamp'][:16].replace('T', ' '), 'dapat_hapus': True,
-                })
+                # Redeem
+                if role == "member":
+                    cur.execute(
+                        """
+                        SELECT r.timestamp, r.email_member, r.kode_hadiah, h.miles, h.nama
+                        FROM redeem r
+                        LEFT JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+                        WHERE r.email_member = %s
+                        """,
+                        (user_email,),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        SELECT r.timestamp, r.email_member, r.kode_hadiah, h.miles, h.nama
+                        FROM redeem r
+                        LEFT JOIN hadiah h ON h.kode_hadiah = r.kode_hadiah
+                        """
+                    )
+                for r in cur.fetchall():
+                    miles = r["miles"] or 0
+                    nama_hadiah = r["nama"] if r["nama"] else r["kode_hadiah"]
+                    transaksi_gabungan.append({
+                        "jenis": "Redeem Hadiah", "aktor": r["email_member"],
+                        "detail": f"Tukar {nama_hadiah}", "miles": f"-{miles:,}",
+                        "is_negative": True, "raw_time": str(r["timestamp"]),
+                        "tanggal": str(r["timestamp"])[:16].replace("T", " "), "dapat_hapus": True,
+                    })
 
-            klaim_res = settings.SUPABASE_CLIENT.table('claim_missing_miles').select('id, email_member, timestamp').eq('status_penerimaan', 'Disetujui').execute()
-            for k in klaim_res.data or []:
-                transaksi_gabungan.append({
-                    'jenis': 'Klaim', 'aktor': k['email_member'], 'detail': '-',
-                    'miles': '+1,000', 'is_negative': False, 'raw_time': k['timestamp'],
-                    'tanggal': k['timestamp'][:16].replace('T', ' '), 'dapat_hapus': False,
-                })
+                # Transfer
+                if role == "member":
+                    cur.execute(
+                        "SELECT * FROM transfer WHERE email_member_1=%s",
+                        (user_email,),
+                    )
+                    for t in cur.fetchall():
+                        transaksi_gabungan.append({
+                            "jenis": "Transfer Keluar", "aktor": t["email_member_2"],
+                            "detail": t.get("catatan", "-"), "miles": f"-{t['jumlah']:,}",
+                            "is_negative": True, "raw_time": str(t["timestamp"]),
+                            "tanggal": str(t["timestamp"])[:16].replace("T", " "), "dapat_hapus": True,
+                        })
+                    cur.execute(
+                        "SELECT * FROM transfer WHERE email_member_2=%s",
+                        (user_email,),
+                    )
+                    for t in cur.fetchall():
+                        transaksi_gabungan.append({
+                            "jenis": "Transfer Masuk", "aktor": t["email_member_1"],
+                            "detail": t.get("catatan", "-"), "miles": f"+{t['jumlah']:,}",
+                            "is_negative": False, "raw_time": str(t["timestamp"]),
+                            "tanggal": str(t["timestamp"])[:16].replace("T", " "), "dapat_hapus": True,
+                        })
+                else:
+                    cur.execute("SELECT * FROM transfer")
+                    for t in cur.fetchall():
+                        transaksi_gabungan.append({
+                            "jenis": "Transfer Miles",
+                            "aktor": f"{t['email_member_1']} → {t['email_member_2']}",
+                            "detail": t.get("catatan", "-"), "miles": f"{t['jumlah']:,}",
+                            "is_negative": False, "raw_time": str(t["timestamp"]),
+                            "tanggal": str(t["timestamp"])[:16].replace("T", " "), "dapat_hapus": True,
+                        })
 
-        transaksi_gabungan.sort(key=lambda x: x['raw_time'], reverse=True)
+                    cur.execute(
+                        "SELECT id, email_member, timestamp FROM claim_missing_miles WHERE status_penerimaan='Disetujui'"
+                    )
+                    for k in cur.fetchall():
+                        transaksi_gabungan.append({
+                            "jenis": "Klaim", "aktor": k["email_member"], "detail": "-",
+                            "miles": "+1,000", "is_negative": False, "raw_time": str(k["timestamp"]),
+                            "tanggal": str(k["timestamp"])[:16].replace("T", " "), "dapat_hapus": False,
+                        })
+
+        transaksi_gabungan.sort(key=lambda x: x["raw_time"], reverse=True)
 
         context_stats = {}
-        if role == 'staf':
+        if role == "staf":
             total_miles_beredar = 0
             try:
-                member_res = settings.SUPABASE_CLIENT.table('member').select('total_miles').execute()
-                total_miles_beredar = sum(m.get('total_miles', 0) or 0 for m in member_res.data or [])
-            except:
+                with _get_conn() as conn:
+                    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                        cur.execute("SELECT total_miles FROM member")
+                        total_miles_beredar = sum(m.get("total_miles", 0) or 0 for m in cur.fetchall())
+            except Exception:
                 pass
-            bulan_ini = datetime.datetime.now().strftime('%Y-%m')
-            total_redeem_bulan_ini = sum(1 for t in transaksi_gabungan if t['jenis'] == 'Redeem Hadiah' and t['tanggal'].startswith(bulan_ini))
-            total_klaim_disetujui = sum(1 for t in transaksi_gabungan if t['jenis'] == 'Klaim')
+            bulan_ini = datetime.datetime.now().strftime("%Y-%m")
+            total_redeem_bulan_ini = sum(1 for t in transaksi_gabungan if t["jenis"] == "Redeem Hadiah" and t["tanggal"].startswith(bulan_ini))
+            total_klaim_disetujui = sum(1 for t in transaksi_gabungan if t["jenis"] == "Klaim")
             context_stats = {
-                'total_miles_beredar': f"{total_miles_beredar:,}",
-                'total_redeem_bulan_ini': f"{total_redeem_bulan_ini:,}",
-                'total_klaim_disetujui': f"{total_klaim_disetujui:,}",
+                "total_miles_beredar": f"{total_miles_beredar:,}",
+                "total_redeem_bulan_ini": f"{total_redeem_bulan_ini:,}",
+                "total_klaim_disetujui": f"{total_klaim_disetujui:,}",
             }
 
     except Exception as e:
@@ -432,16 +572,26 @@ def laporan_transaksi(request):
         context_stats = {}
 
     top_member = []
-    if role == 'staf':
+    if role == "staf":
         try:
-            top_res = settings.SUPABASE_CLIENT.table('member').select('email, total_miles').order('total_miles', desc=True).limit(5).execute()
-            top_member = top_res.data or []
-        except:
-            pass
+            with _get_conn() as conn:
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                    cur.execute("SELECT * FROM get_top5_member_by_miles()")
+                    top_member = [dict(r) for r in cur.fetchall()]
+            if top_member:
+                peringkat_pertama = top_member[0]
+                messages.success(
+                    request,
+                    f"SUKSES: Daftar Top 5 Member berdasarkan total miles berhasil diperbarui, "
+                    f"dengan peringkat pertama \"{peringkat_pertama['email']}\" "
+                    f"memiliki {int(peringkat_pertama['total_miles'])} miles."
+                )
+        except Exception as e:
+            print(f"Error fetching top member via stored procedure: {e}")
 
     return render(request, 'rewards/laporan_transaksi.html', {
-        'transaksi_list': transaksi_gabungan,
-        'role': role,
-        'top_member': top_member,
+        "transaksi_list": transaksi_gabungan,
+        "role": role,
+        "top_member": top_member,
         **context_stats,
     })
