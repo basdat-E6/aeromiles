@@ -167,30 +167,38 @@ def approve_claim(request, claim_id):
             conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
             cur = conn.cursor()
 
-            cur.execute("SELECT email_member FROM claim_missing_miles WHERE id = %s", (claim_id,))
+            # Ambil data klaim untuk keperluan pesan sukses
+            cur.execute(
+                "SELECT email_member, flight_number FROM claim_missing_miles WHERE id = %s",
+                (claim_id,)
+            )
             row = cur.fetchone()
             if not row:
                 return redirect("miles:claim_miles")
-            email_member = row[0]
 
-            cur.execute("""
-                UPDATE claim_missing_miles 
+            email_member, flight_number = row
+
+            # Update status → trigger akan otomatis tambah 1000 miles ke member
+            cur.execute(
+                """
+                UPDATE claim_missing_miles
                 SET status_penerimaan = 'Disetujui'
                 WHERE id = %s
-            """, (claim_id,))
-
-            cur.execute("""
-                UPDATE member
-                SET total_miles = total_miles + 1000,
-                    award_miles = award_miles + 1000
-                WHERE email = %s
-            """, (email_member,))
+                """,
+                (claim_id,)
+            )
 
             conn.commit()
+            messages.success(
+                request,
+                f'SUKSES: Total miles Member "{email_member}" telah diperbarui. '
+                f'Miles ditambahkan: 1000 miles dari klaim penerbangan "{flight_number}".'
+            )
 
         except Exception as e:
             if conn:
                 conn.rollback()
+            messages.error(request, "Gagal menyetujui klaim.")
             print(f"Gagal setujui klaim: {e}")
         finally:
             if cur:
