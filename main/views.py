@@ -3,7 +3,6 @@ from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import MemberProfile
 
 
 def landing(request):
@@ -161,7 +160,6 @@ def profil_view(request):
                 }).eq('email', user_email).execute()
             except Exception as e:
                 messages.error(request, {e})
-
         # Skenario 2: Update Password
         elif action == 'update_password':
             old_pass = request.POST.get('old_pass')
@@ -174,7 +172,6 @@ def profil_view(request):
                 res = settings.SUPABASE_CLIENT.table('pengguna').select('password').eq('email', user_email).execute()
                 if res.data and res.data[0]['password'] == old_pass:
                     settings.SUPABASE_CLIENT.table('pengguna').update({'password': new_pass}).eq('email', user_email).execute()
-        
         return redirect('main:profil')
 
     # --- LOGIKA GET (AMBIL DATA UNTUK TAMPILAN) ---
@@ -192,7 +189,6 @@ def profil_view(request):
             profile['nama_belakang'] = profile.get('last_name', '') or ''
 
             context['profile'] = profile
-
         if role == 'member':
             res_m = settings.SUPABASE_CLIENT.table('member').select('*').eq('email', user_email).execute()
             if res_m.data: context['member'] = res_m.data[0]

@@ -4,7 +4,6 @@ from . import views
 app_name = "rewards"
 
 urlpatterns = [
-    
     # Fitur Hadiah
     path('hadiah/', views.hadiah_list, name='hadiah_list'),
     path('hadiah/create/', views.hadiah_create, name='hadiah_create'),
