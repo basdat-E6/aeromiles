@@ -12,6 +12,9 @@ def get_db_connection():
     return psycopg2.connect(settings.DATABASE_URL)
 
 def landing(request):
+    user_email = request.session.get('user_email')
+    if user_email:
+        return redirect('main:dashboard')
     return render(request, "landing.html")
 
 def dashboard(request):
