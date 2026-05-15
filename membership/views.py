@@ -1,8 +1,15 @@
+import psycopg2
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from datetime import date
+from django.db import connection
+
+def dictfetchall(cursor):
+    if cursor.description is None:
+        return []
+    columns = [col[0] for col in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 def kelola_member(request):
     if request.method == 'POST':
@@ -15,30 +22,29 @@ def kelola_member(request):
             nama_depan = request.POST.get('nama_depan', '')
             nama_tengah = request.POST.get('nama_tengah', '')
             first_mid_name = f"{nama_depan} {nama_tengah}".strip()
+            hashed_pw = make_password(password)
+            tgl_hari_ini = date.today().isoformat()
 
             try:
-                settings.SUPABASE_CLIENT.table('pengguna').insert({
-                    "email": email,
-                    "password": make_password(password), # Wajib di-hash
-                    "salutation": request.POST.get('salutation'),
-                    "first_mid_name": first_mid_name,
-                    "last_name": request.POST.get('nama_belakang'),
-                    "country_code": request.POST.get('country_code'),
-                    "mobile_number": request.POST.get('nomor_hp'),
-                    "tanggal_lahir": request.POST.get('tanggal_lahir'),
-                    "kewarganegaraan": request.POST.get('kewarganegaraan')
-                }).execute()
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO pengguna 
+                        (email, password, salutation, first_mid_name, last_name, country_code, mobile_number, tanggal_lahir, kewarganegaraan) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, [
+                        email, hashed_pw, request.POST.get('salutation'), 
+                        first_mid_name, request.POST.get('nama_belakang'), 
+                        request.POST.get('country_code'), request.POST.get('nomor_hp'), 
+                        request.POST.get('tanggal_lahir'), request.POST.get('kewarganegaraan')
+                    ])
+                    # Insert ke tabel Member
+                    cursor.execute("""
+                        INSERT INTO member (email, tanggal_gabung, id_tier, award_miles, total_miles) 
+                        VALUES (%s, %s, %s, 0, 0)
+                    """, [email, tgl_hari_ini, "T1"])
 
-                settings.SUPABASE_CLIENT.table('member').insert({
-                    "email": email,
-                    "tanggal_gabung": date.today().isoformat(),
-                    "id_tier": "T1", # Ganti dengan ID tier terendah di database kamu
-                    "award_miles": 0,
-                    "total_miles": 0
-                }).execute()
-                
                 messages.success(request, "Member baru berhasil ditambahkan!")
-            except Exception as e:
+            except psycopg2.Error as e:
                 print(f"Error Add Member: {e}")
                 messages.error(request, "Gagal menambahkan member. Email mungkin sudah terdaftar.")
 
@@ -49,19 +55,22 @@ def kelola_member(request):
             first_mid_name = f"{nama_depan} {nama_tengah}".strip()
 
             try:
-                settings.SUPABASE_CLIENT.table('pengguna').update({
-                    "salutation": request.POST.get('salutation_edit'),
-                    "first_mid_name": first_mid_name,
-                    "last_name": request.POST.get('nama_belakang_edit'),
-                    "country_code": request.POST.get('country_code_edit'),
-                    "mobile_number": request.POST.get('nomor_hp_edit'),
-                    "tanggal_lahir": request.POST.get('tanggal_lahir_edit'),
-                    "kewarganegaraan": request.POST.get('kewarganegaraan_edit')
-                }).eq('email', email).execute()
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE pengguna 
+                        SET salutation=%s, first_mid_name=%s, last_name=%s, country_code=%s, 
+                            mobile_number=%s, tanggal_lahir=%s, kewarganegaraan=%s 
+                        WHERE email=%s
+                    """, [
+                        request.POST.get('salutation_edit'), first_mid_name, 
+                        request.POST.get('nama_belakang_edit'), request.POST.get('country_code_edit'), 
+                        request.POST.get('nomor_hp_edit'), request.POST.get('tanggal_lahir_edit'), 
+                        request.POST.get('kewarganegaraan_edit'), email
+                    ])
 
-                settings.SUPABASE_CLIENT.table('member').update({
-                    "id_tier": request.POST.get('tier_edit')
-                }).eq('email', email).execute()
+                    cursor.execute("""
+                        UPDATE member SET id_tier=%s WHERE email=%s
+                    """, [request.POST.get('tier_edit'), email])
 
                 messages.success(request, "Data member berhasil diperbarui!")
             except Exception as e:
@@ -71,7 +80,8 @@ def kelola_member(request):
         elif action == 'delete':
             email = request.POST.get('email_delete')
             try:
-                settings.SUPABASE_CLIENT.table('pengguna').delete().eq('email', email).execute()
+                with connection.cursor() as cursor:
+                    cursor.execute("DELETE FROM pengguna WHERE email=%s", [email])
                 messages.success(request, "Member berhasil dihapus!")
             except Exception as e:
                 print(f"Error Delete Member: {e}")
@@ -84,26 +94,28 @@ def kelola_member(request):
     tier_filter = request.GET.get('tier', '')
 
     try:
-        tier_res = settings.SUPABASE_CLIENT.table('tier').select('*').execute()
-        context['tier_list'] = tier_res.data
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM tier")
+            context['tier_list'] = dictfetchall(cursor)
 
-        members_res = settings.SUPABASE_CLIENT.table('member') \
-            .select('*, pengguna(*), tier(nama)') \
-            .execute()
-        
-        raw_members = members_res.data
+            cursor.execute("""
+                SELECT 
+                    m.nomor_member, m.email, m.id_tier, m.total_miles, m.award_miles, m.tanggal_gabung,
+                    p.salutation, p.first_mid_name, p.last_name, p.country_code, p.mobile_number, 
+                    p.tanggal_lahir, p.kewarganegaraan,
+                    t.nama AS tier_nama
+                FROM member m
+                JOIN pengguna p ON m.email = p.email
+                LEFT JOIN tier t ON m.id_tier = t.id_tier
+            """)
+            raw_members = dictfetchall(cursor)
+
         processed_members = []
-
         for m in raw_members:
-            pengguna = m.get('pengguna', {})
-            tier_nama = m.get('tier', {}).get('nama', '-')
-            
-            if not pengguna: continue
-
             if tier_filter and m['id_tier'] != tier_filter:
                 continue
 
-            full_name = f"{pengguna.get('salutation', '')} {pengguna.get('first_mid_name', '')} {pengguna.get('last_name', '')}".strip()
+            full_name = f"{m.get('salutation', '')} {m.get('first_mid_name', '')} {m.get('last_name', '')}".strip()
             
             if search_query:
                 if not (search_query in full_name.lower() or 
@@ -115,18 +127,18 @@ def kelola_member(request):
                 'nomor_member': m.get('nomor_member', '-'),
                 'email': m['email'],
                 'nama_lengkap': full_name,
-                'tier_nama': tier_nama,
+                'tier_nama': m.get('tier_nama', '-'),
                 'id_tier': m['id_tier'],
                 'total_miles': f"{m.get('total_miles', 0):,}",
                 'award_miles': f"{m.get('award_miles', 0):,}",
-                'tanggal_gabung': m.get('tanggal_gabung', '-'),
-                'raw_salutation': pengguna.get('salutation', ''),
-                'raw_fmn': pengguna.get('first_mid_name', ''),
-                'raw_last': pengguna.get('last_name', ''),
-                'raw_country': pengguna.get('country_code', ''),
-                'raw_phone': pengguna.get('mobile_number', ''),
-                'raw_dob': pengguna.get('tanggal_lahir', ''),
-                'raw_kwn': pengguna.get('kewarganegaraan', ''),
+                'tanggal_gabung': str(m.get('tanggal_gabung', '-')),
+                'raw_salutation': m.get('salutation', ''),
+                'raw_fmn': m.get('first_mid_name', ''),
+                'raw_last': m.get('last_name', ''),
+                'raw_country': m.get('country_code', ''),
+                'raw_phone': m.get('mobile_number', ''),
+                'raw_dob': str(m.get('tanggal_lahir', '')),
+                'raw_kwn': m.get('kewarganegaraan', ''),
             })
 
         context['members'] = processed_members
@@ -138,6 +150,7 @@ def kelola_member(request):
 
     return render(request, 'kelola_member.html', context)
 
+
 def identitas(request):
     user_email = request.session.get('user_email')
 
@@ -145,41 +158,34 @@ def identitas(request):
         action = request.POST.get('action')
 
         if action == 'add':
-            nomor = request.POST.get('nomor')
-            jenis = request.POST.get('jenis')
-            negara = request.POST.get('negara_penerbit')
-            tgl_terbit = request.POST.get('tanggal_terbit')
-            tgl_habis = request.POST.get('tanggal_habis')
-
             try:
-                settings.SUPABASE_CLIENT.table('identitas').insert({
-                    "nomor": nomor,
-                    "jenis": jenis,
-                    "negara_penerbit": negara,
-                    "tanggal_terbit": tgl_terbit,
-                    "tanggal_habis": tgl_habis,
-                    "email_member": user_email
-                }).execute()
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        INSERT INTO identitas (nomor, jenis, negara_penerbit, tanggal_terbit, tanggal_habis, email_member) 
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, [
+                        request.POST.get('nomor'), request.POST.get('jenis'), 
+                        request.POST.get('negara_penerbit'), request.POST.get('tanggal_terbit'), 
+                        request.POST.get('tanggal_habis'), user_email
+                    ])
                 messages.success(request, "Dokumen identitas berhasil ditambahkan!")
-            except Exception as e:
+            except psycopg2.Error as e:
                 print(f"Error Add Identitas: {e}")
                 messages.error(request, "Gagal! Nomor dokumen mungkin sudah terdaftar di sistem.")
 
         elif action == 'edit':
             nomor = request.POST.get('nomor_edit')
-            jenis = request.POST.get('jenis_edit')
-            negara = request.POST.get('negara_penerbit_edit')
-            tgl_terbit = request.POST.get('tanggal_terbit_edit')
-            tgl_habis = request.POST.get('tanggal_habis_edit')
-
             try:
-                settings.SUPABASE_CLIENT.table('identitas').update({
-                    "jenis": jenis,
-                    "negara_penerbit": negara,
-                    "tanggal_terbit": tgl_terbit,
-                    "tanggal_habis": tgl_habis
-                }).eq('nomor', nomor).eq('email_member', user_email).execute()
-                
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE identitas 
+                        SET jenis=%s, negara_penerbit=%s, tanggal_terbit=%s, tanggal_habis=%s 
+                        WHERE nomor=%s AND email_member=%s
+                    """, [
+                        request.POST.get('jenis_edit'), request.POST.get('negara_penerbit_edit'),
+                        request.POST.get('tanggal_terbit_edit'), request.POST.get('tanggal_habis_edit'),
+                        nomor, user_email
+                    ])
                 messages.success(request, "Data identitas berhasil diperbarui!")
             except Exception as e:
                 print(f"Error Edit Identitas: {e}")
@@ -188,8 +194,8 @@ def identitas(request):
         elif action == 'delete':
             nomor = request.POST.get('nomor_delete')
             try:
-                settings.SUPABASE_CLIENT.table('identitas').delete() \
-                    .eq('nomor', nomor).eq('email_member', user_email).execute()
+                with connection.cursor() as cursor:
+                    cursor.execute("DELETE FROM identitas WHERE nomor=%s AND email_member=%s", [nomor, user_email])
                 messages.success(request, "Identitas berhasil dihapus!")
             except Exception as e:
                 print(f"Error Delete Identitas: {e}")
@@ -199,14 +205,19 @@ def identitas(request):
 
     context = {}
     try:
-        id_res = settings.SUPABASE_CLIENT.table('identitas').select('*').eq('email_member', user_email).execute()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM identitas WHERE email_member=%s", [user_email])
+            identitas_list = dictfetchall(cursor)
         
-        identitas_list = id_res.data
         hari_ini = date.today()
 
         for doc in identitas_list:
-            tgl_habis_obj = date.fromisoformat(doc['tanggal_habis'])
-            
+            if type(doc['tanggal_habis']) is str:
+                tgl_habis_obj = date.fromisoformat(doc['tanggal_habis'])
+            else:
+                tgl_habis_obj = doc['tanggal_habis']
+                doc['tanggal_habis'] = doc['tanggal_habis'].isoformat()
+                
             if tgl_habis_obj < hari_ini:
                 doc['status'] = 'Kedaluwarsa'
             else:
