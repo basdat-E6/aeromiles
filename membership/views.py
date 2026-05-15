@@ -41,7 +41,7 @@ def kelola_member(request):
                     cursor.execute("""
                         INSERT INTO member (email, tanggal_gabung, id_tier, award_miles, total_miles) 
                         VALUES (%s, %s, %s, 0, 0)
-                    """, [email, tgl_hari_ini, "T1"])
+                    """, [email, tgl_hari_ini, "T01"])
 
                 messages.success(request, "Member baru berhasil ditambahkan!")
             except psycopg2.Error as e:
