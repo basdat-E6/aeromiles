@@ -31,10 +31,22 @@ def dashboard(request):
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # 1. Ambil Data Pengguna
         cursor.execute("SELECT * FROM pengguna WHERE email = %s", [user_email])
         pengguna_data = cursor.fetchone()
         if pengguna_data:
+            tanggal = pengguna_data.get('tanggal_lahir')
+            
+            if tanggal:
+                bulan_indo = {
+                    1: 'Januari', 2: 'Februari', 3: 'Maret', 4: 'April',
+                    5: 'Mei', 6: 'Juni', 7: 'Juli', 8: 'Agustus',
+                    9: 'September', 10: 'Oktober', 11: 'November', 12: 'Desember'
+                }
+                
+                pengguna_data['tanggal_lahir'] = f"{tanggal.day:02d} {bulan_indo[tanggal.month]} {tanggal.year}"
+            else:
+                pengguna_data['tanggal_lahir'] = "-"
+
             context['pengguna'] = pengguna_data
 
         if role == 'member':
