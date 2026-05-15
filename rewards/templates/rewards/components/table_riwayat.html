@@ -1,18 +1,26 @@
-<table class="w-full bg-white rounded-xl shadow">
-  <thead>
-    <tr class="text-gray-500 text-left">
-      <th class="p-3">Hadiah</th>
-      <th class="p-3">Waktu</th>
-      <th class="p-3">Miles</th>
-      <th class="p-3">Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr class="border-t">
-      <td class="p-3">Akses Lounge</td>
-      <td class="p-3">2025-01-20</td>
-      <td class="p-3 text-red-500">-3,000</td>
-      <td class="p-3">🔒</td>
-    </tr>
-  </tbody>
-</table>
+<div class="bg-white rounded-xl shadow overflow-hidden">
+  <table class="w-full">
+    <thead class="bg-gray-50 border-b border-gray-100">
+      <tr class="text-gray-500 text-left text-sm">
+        <th class="px-5 py-4 font-bold">Hadiah</th>
+        <th class="px-5 py-4 font-bold">Waktu</th>
+        <th class="px-5 py-4 font-bold">Miles</th>
+        <th class="px-5 py-4 font-bold">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in riwayat_redeem %}
+      <tr class="border-t border-gray-100 text-sm text-gray-700">
+        <td class="px-5 py-4 font-medium">{{ r.nama_hadiah }}</td>
+        <td class="px-5 py-4">{{ r.tanggal }}</td>
+        <td class="px-5 py-4 font-bold text-red-500">-{{ r.miles|floatformat:0 }}</td>
+        <td class="px-5 py-4">🔒</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-5 py-10 text-center text-gray-400">Belum ada riwayat redeem.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

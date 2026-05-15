@@ -1,11 +1,10 @@
-from pyexpat.errors import messages
-
+from django.contrib import messages  
 from django.shortcuts import render, redirect, get_object_or_404
 
 from aeromiles import settings
 from .models import Hadiah, Penyedia, Mitra
-from datetime import date, datetime
-
+import datetime
+from datetime import date
 
 def _sync_penyedia():
     """Pastikan semua maskapai dan mitra punya entri Penyedia di DB."""
@@ -177,6 +176,7 @@ def mitra_delete(request, email):
     return redirect('rewards:mitra_list')
 
 def katalog(request):
+    print("=== KATALOG DIPANGGIL ===") 
     user_email = request.session.get("user_email")
     role = request.session.get("role")
 
@@ -192,12 +192,20 @@ def katalog(request):
         
         try:
             hadiah_res = settings.SUPABASE_CLIENT.table("hadiah") \
-                .select("miles") \
+                .select("miles, nama, valid_start_date, program_end") \
                 .eq("kode_hadiah", kode_hadiah) \
                 .single().execute()
             
             if not hadiah_res.data:
                 messages.error(request, "Hadiah tidak ditemukan.")
+                return redirect("rewards:katalog")
+
+            # Cek periode aktif
+            hari_ini = date.today()
+            valid_start = date.fromisoformat(hadiah_res.data["valid_start_date"])
+            program_end = date.fromisoformat(hadiah_res.data["program_end"])
+            if not (valid_start <= hari_ini <= program_end):
+                messages.error(request, f"Hadiah \"{hadiah_res.data['nama']}\" tidak tersedia pada periode ini.")
                 return redirect("rewards:katalog")
                 
             harga_miles = hadiah_res.data["miles"]
@@ -209,7 +217,7 @@ def katalog(request):
             saldo_sekarang = member_res.data.get("award_miles", 0)
 
             if saldo_sekarang < harga_miles:
-                messages.error(request, "Award miles Anda tidak mencukupi untuk hadiah ini!")
+                messages.error(request, f"Saldo award miles tidak mencukupi. Dibutuhkan {harga_miles} miles, saldo Anda: {saldo_sekarang} miles.")
                 return redirect("rewards:katalog")
 
             waktu_sekarang = datetime.datetime.now().isoformat()
@@ -219,7 +227,12 @@ def katalog(request):
                 "timestamp": waktu_sekarang
             }).execute()
 
-            messages.success(request, "Berhasil menukarkan hadiah!")
+            # Kurangi award_miles
+            settings.SUPABASE_CLIENT.table("member").update({
+                "award_miles": saldo_sekarang - harga_miles
+            }).eq("email", user_email).execute()
+
+            messages.success(request, f"SUKSES: Redeem hadiah \"{hadiah_res.data['nama']}\" berhasil. Award miles Anda berkurang {harga_miles} miles.")
             return redirect("rewards:katalog")
 
         except Exception as e:
@@ -227,33 +240,54 @@ def katalog(request):
             messages.error(request, "Terjadi kesalahan saat memproses penukaran.")
             return redirect("rewards:katalog")
 
-
-    context = {
-        "award_miles": 0,
-        "hadiah_list": []
-    }
+    context = {"award_miles": 0, "hadiah_list": [], "riwayat_redeem": []}
 
     try:
-        if role == "member":
-            member_res = settings.SUPABASE_CLIENT.table("member") \
-                .select("award_miles") \
-                .eq("email", user_email) \
-                .single().execute()
-            if member_res.data:
-                context["award_miles"] = member_res.data.get("award_miles", 0)
+            if role == "member":
+                member_res = settings.SUPABASE_CLIENT.table("member") \
+                    .select("award_miles") \
+                    .eq("email", user_email) \
+                    .single().execute()
+                if member_res.data:
+                    context["award_miles"] = member_res.data.get("award_miles", 0)
 
-        hari_ini = datetime.date.today().isoformat()
-        
-        hadiah_res = settings.SUPABASE_CLIENT.table("hadiah") \
-            .select("*, penyedia(nama_penyedia)") \
-            .gte("program_end", hari_ini) \
-            .execute()
+            hari_ini = date.today().isoformat()
+            print("DEBUG hari_ini:", hari_ini)
             
-        if hadiah_res.data:
-            daftar_hadiah = hadiah_res.data
-            for h in daftar_hadiah:
-                h['nama_mitra'] = h.get('penyedia', {}).get('nama_penyedia', '-')
-            context["hadiah_list"] = daftar_hadiah
+            hadiah_res = settings.SUPABASE_CLIENT.table("hadiah") \
+                .select("kode_hadiah, nama, miles, deskripsi, valid_start_date, program_end, id_penyedia") \
+                .gte("program_end", hari_ini) \
+                .execute()
+
+            print("DEBUG hadiah_res:", hadiah_res.data)
+
+            if hadiah_res.data:
+                daftar_hadiah = hadiah_res.data
+                for h in daftar_hadiah:
+                    try:
+                        mitra_res = settings.SUPABASE_CLIENT.table("mitra") \
+                            .select("nama_mitra") \
+                            .eq("id_penyedia", h["id_penyedia"]) \
+                            .single().execute()
+                        h['nama_mitra'] = mitra_res.data.get("nama_mitra", "-") if mitra_res.data else "-"
+                    except:
+                        h['nama_mitra'] = "-"
+                context["hadiah_list"] = daftar_hadiah
+
+            riwayat_res = settings.SUPABASE_CLIENT.table("redeem") \
+                .select("timestamp, kode_hadiah, hadiah(miles, nama)") \
+                .eq("email_member", user_email) \
+                .order("timestamp", desc=True) \
+                .execute()
+
+            riwayat_list = []
+            for r in riwayat_res.data or []:
+                riwayat_list.append({
+                    "nama_hadiah": r.get("hadiah", {}).get("nama", r["kode_hadiah"]) if r.get("hadiah") else r["kode_hadiah"],
+                    "miles": r.get("hadiah", {}).get("miles", 0) if r.get("hadiah") else 0,
+                    "tanggal": r["timestamp"][:16].replace("T", " "),
+                })
+            context["riwayat_redeem"] = riwayat_list
 
     except Exception as e:
         print(f"Error fetch katalog: {e}")
@@ -272,46 +306,108 @@ def beli_package(request):
             messages.error(request, "Hanya member yang dapat membeli package.")
             return redirect("rewards:beli_package")
 
-        nama_paket = request.POST.get("nama_paket")
+        id_package = request.POST.get("id_package")
         waktu_sekarang = datetime.datetime.now().isoformat()
         
         try:
+            # Ambil data package
+            pkg_res = settings.SUPABASE_CLIENT.table("award_miles_package") \
+                .select("jumlah_award_miles") \
+                .eq("id", id_package) \
+                .single().execute()
+
+            if not pkg_res.data:
+                messages.error(request, "Paket tidak ditemukan.")
+                return redirect("rewards:beli_package")
+
+            jumlah_miles = pkg_res.data["jumlah_award_miles"]
+
+            # Insert ke member_award_miles_package
             settings.SUPABASE_CLIENT.table("member_award_miles_package").insert({
+                "id_award_miles_package": id_package,
                 "email_member": user_email,
-                "nama_paket": nama_paket,
                 "timestamp": waktu_sekarang
             }).execute()
+
+            # Update award_miles dan total_miles member
+            member_res = settings.SUPABASE_CLIENT.table("member") \
+                .select("award_miles, total_miles") \
+                .eq("email", user_email) \
+                .single().execute()
+
+            award_miles_baru = (member_res.data.get("award_miles") or 0) + jumlah_miles
+            total_miles_baru = (member_res.data.get("total_miles") or 0) + jumlah_miles
+
+            settings.SUPABASE_CLIENT.table("member").update({
+                "award_miles": award_miles_baru,
+                "total_miles": total_miles_baru
+            }).eq("email", user_email).execute()
+
+            messages.success(request, f"SUKSES: Pembelian package berhasil. Award miles dan total miles Anda bertambah {jumlah_miles:,} miles.")
             
-            messages.success(request, f"Berhasil membeli paket {nama_paket}!")
         except Exception as e:
             print(f"Error Beli Package: {e}")
             messages.error(request, "Gagal memproses pembelian paket.")
             
         return redirect("rewards:beli_package")
 
-    context = {"packages": []}
+    context = {"packages": [], "award_miles": 0}
     try:
         pkg_res = settings.SUPABASE_CLIENT.table("award_miles_package").select("*").execute()
         if pkg_res.data:
             context["packages"] = pkg_res.data
+
+        member_res = settings.SUPABASE_CLIENT.table("member") \
+            .select("award_miles") \
+            .eq("email", user_email) \
+            .single().execute()
+        if member_res.data:
+            context["award_miles"] = member_res.data.get("award_miles", 0)
+
     except Exception as e:
         print(f"Error fetch packages: {e}")
 
     return render(request, 'rewards/beli_package.html', context)
 
 def info_tier(request):
-    context = {"tiers": []}
+    user_email = request.session.get("user_email")
+    context = {"tiers": [], "id_tier_saya": None, "total_miles": 0}
+
     try:
         tier_res = settings.SUPABASE_CLIENT.table("tier").select("*").execute()
-        
         if tier_res.data:
             tiers = tier_res.data
             tiers.sort(key=lambda x: x.get('id_tier', ''))
             context["tiers"] = tiers
-            
+
+        if user_email:
+            member_res = settings.SUPABASE_CLIENT.table("member") \
+                .select("id_tier, total_miles") \
+                .eq("email", user_email) \
+                .single().execute()
+            if member_res.data:
+                context["id_tier_saya"] = member_res.data.get("id_tier")
+                context["total_miles"] = member_res.data.get("total_miles", 0)
+
     except Exception as e:
         print(f"Error fetch info tier: {e}")
+    tier_berikutnya = None
+    progress_persen = 0
 
+    id_tier_saya = context.get("id_tier_saya")
+    if id_tier_saya and context["tiers"]:
+        tiers = context["tiers"]
+        for i, t in enumerate(tiers):
+            if t["id_tier"] == id_tier_saya:
+                if i + 1 < len(tiers):
+                    tier_berikutnya = tiers[i + 1]
+                    total = context.get("total_miles", 0) or 0
+                    target = tier_berikutnya["minimal_tier_miles"]
+                    progress_persen = min(int((total / target) * 100), 100) if target > 0 else 100
+                break
+
+    context["tier_berikutnya"] = tier_berikutnya
+    context["progress_persen"] = progress_persen
     return render(request, 'rewards/info_tier.html', context)
 
 def laporan_transaksi(request):
@@ -324,35 +420,34 @@ def laporan_transaksi(request):
     transaksi_gabungan = []
 
     try:
+        # Package
         pkg_query = settings.SUPABASE_CLIENT.table('member_award_miles_package') \
-            .select('timestamp, email_member, nama_paket, award_miles_package(jumlah_award_miles)')
-        
+            .select('timestamp, email_member, id_award_miles_package, award_miles_package(jumlah_award_miles)')
         if role == 'member':
             pkg_query = pkg_query.eq('email_member', user_email)
-            
         pkg_res = pkg_query.execute()
-        for p in pkg_res.data:
+        for p in pkg_res.data or []:
             miles = p.get('award_miles_package', {}).get('jumlah_award_miles', 0) if p.get('award_miles_package') else 0
             transaksi_gabungan.append({
                 'jenis': 'Beli Package',
                 'aktor': p['email_member'],
-                'detail': f"Beli {p['nama_paket']}",
+                'detail': f"Beli {p['id_award_miles_package']}",
                 'miles': f"+{miles:,}",
                 'is_negative': False,
                 'raw_time': p['timestamp'],
-                'tanggal': p['timestamp'][:16].replace('T', ' ')
+                'tanggal': p['timestamp'][:16].replace('T', ' '),
+                'dapat_hapus': True,
             })
 
+        # Redeem
         rdm_query = settings.SUPABASE_CLIENT.table('redeem') \
             .select('timestamp, email_member, kode_hadiah, hadiah(miles, nama)')
-        
         if role == 'member':
             rdm_query = rdm_query.eq('email_member', user_email)
-            
         rdm_res = rdm_query.execute()
-        for r in rdm_res.data:
+        for r in rdm_res.data or []:
             miles = r.get('hadiah', {}).get('miles', 0) if r.get('hadiah') else 0
-            nama_hadiah = r.get('hadiah', {}).get('nama', r['kode_hadiah'])
+            nama_hadiah = r.get('hadiah', {}).get('nama', r['kode_hadiah']) if r.get('hadiah') else r['kode_hadiah']
             transaksi_gabungan.append({
                 'jenis': 'Redeem Hadiah',
                 'aktor': r['email_member'],
@@ -360,52 +455,110 @@ def laporan_transaksi(request):
                 'miles': f"-{miles:,}",
                 'is_negative': True,
                 'raw_time': r['timestamp'],
-                'tanggal': r['timestamp'][:16].replace('T', ' ')
+                'tanggal': r['timestamp'][:16].replace('T', ' '),
+                'dapat_hapus': True,
             })
 
+        # Transfer
         if role == 'member':
             tf_out = settings.SUPABASE_CLIENT.table('transfer').select('*').eq('email_member_1', user_email).execute()
-            for t in tf_out.data:
+            for t in tf_out.data or []:
                 transaksi_gabungan.append({
                     'jenis': 'Transfer Keluar',
-                    'aktor': t['email_member_2'], 
+                    'aktor': t['email_member_2'],
                     'detail': t.get('catatan', '-'),
                     'miles': f"-{t['jumlah']:,}",
                     'is_negative': True,
                     'raw_time': t['timestamp'],
-                    'tanggal': t['timestamp'][:16].replace('T', ' ')
+                    'tanggal': t['timestamp'][:16].replace('T', ' '),
+                    'dapat_hapus': True,
                 })
-
             tf_in = settings.SUPABASE_CLIENT.table('transfer').select('*').eq('email_member_2', user_email).execute()
-            for t in tf_in.data:
+            for t in tf_in.data or []:
                 transaksi_gabungan.append({
                     'jenis': 'Transfer Masuk',
-                    'aktor': t['email_member_1'], 
+                    'aktor': t['email_member_1'],
                     'detail': t.get('catatan', '-'),
                     'miles': f"+{t['jumlah']:,}",
                     'is_negative': False,
                     'raw_time': t['timestamp'],
-                    'tanggal': t['timestamp'][:16].replace('T', ' ')
+                    'tanggal': t['timestamp'][:16].replace('T', ' '),
+                    'dapat_hapus': True,
                 })
         else:
             tf_res = settings.SUPABASE_CLIENT.table('transfer').select('*').execute()
-            for t in tf_res.data:
+            for t in tf_res.data or []:
                 transaksi_gabungan.append({
                     'jenis': 'Transfer Miles',
-                    'aktor': f"{t['email_member_1']} ➔ {t['email_member_2']}",
+                    'aktor': f"{t['email_member_1']} → {t['email_member_2']}",
                     'detail': t.get('catatan', '-'),
                     'miles': f"{t['jumlah']:,}",
-                    'is_negative': False, # Staf cukup lihat nominal mentah
+                    'is_negative': False,
                     'raw_time': t['timestamp'],
-                    'tanggal': t['timestamp'][:16].replace('T', ' ')
+                    'tanggal': t['timestamp'][:16].replace('T', ' '),
+                    'dapat_hapus': True,
+                })
+
+            # Klaim disetujui - tidak bisa dihapus
+            klaim_res = settings.SUPABASE_CLIENT.table('claim_missing_miles') \
+                .select('id, email_member, timestamp') \
+                .eq('status_penerimaan', 'Disetujui').execute()
+            for k in klaim_res.data or []:
+                transaksi_gabungan.append({
+                    'jenis': 'Klaim',
+                    'aktor': k['email_member'],
+                    'detail': '-',
+                    'miles': '+1,000',
+                    'is_negative': False,
+                    'raw_time': k['timestamp'],
+                    'tanggal': k['timestamp'][:16].replace('T', ' '),
+                    'dapat_hapus': False,
                 })
 
         transaksi_gabungan.sort(key=lambda x: x['raw_time'], reverse=True)
 
+        # Stats untuk staf
+        context_stats = {}
+        if role == 'staf':
+            total_miles_beredar = 0
+            try:
+                member_res = settings.SUPABASE_CLIENT.table('member').select('total_miles').execute()
+                total_miles_beredar = sum(m.get('total_miles', 0) or 0 for m in member_res.data or [])
+            except:
+                pass
+
+            bulan_ini = datetime.datetime.now().strftime('%Y-%m')
+            total_redeem_bulan_ini = sum(
+                1 for t in transaksi_gabungan
+                if t['jenis'] == 'Redeem Hadiah' and t['tanggal'].startswith(bulan_ini)
+            )
+            total_klaim_disetujui = sum(
+                1 for t in transaksi_gabungan if t['jenis'] == 'Klaim'
+            )
+            context_stats = {
+                'total_miles_beredar': f"{total_miles_beredar:,}",
+                'total_redeem_bulan_ini': f"{total_redeem_bulan_ini:,}",
+                'total_klaim_disetujui': f"{total_klaim_disetujui:,}",
+            }
+
     except Exception as e:
         print(f"Error fetching laporan transaksi: {e}")
-
+        context_stats = {}
+    
+    top_member = []
+    if role == 'staf':
+        try:
+            top_res = settings.SUPABASE_CLIENT.table('member') \
+                .select('email, total_miles') \
+                .order('total_miles', desc=True) \
+                .limit(5) \
+                .execute()
+            top_member = top_res.data or []
+        except:
+            pass
     return render(request, 'rewards/laporan_transaksi.html', {
         'transaksi_list': transaksi_gabungan,
-        'role': role
+        'role': role,
+        'top_member': top_member,
+        **context_stats,
     })

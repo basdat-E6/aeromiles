@@ -4,157 +4,129 @@
 {% block content %}
 <div class="min-h-screen bg-gray-100 px-6 md:px-10 py-8">
 
-  <!-- Header -->
   <h1 class="text-2xl font-bold text-gray-900">Info Tier</h1>
 
   <!-- Progress Card -->
+  {% if id_tier_saya and tier_berikutnya %}
   <div class="mt-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-    <p class="text-sm font-bold text-gray-900">Progress ke Tier Berikutnya: Platinum</p>
+    <p class="text-sm font-bold text-gray-900">Progress ke Tier Berikutnya: {{ tier_berikutnya.nama }}</p>
     <div class="flex justify-between text-xs text-gray-500 mt-3 mb-1">
       <span>Total Miles</span>
-      <span>45,000 / 80,000</span>
+      <span>{{ total_miles }} / {{ tier_berikutnya.minimal_tier_miles }}</span>
     </div>
     <div style="background:#e5e7eb; border-radius:9999px; height:8px; width:100%;">
-      <div style="background:#1e3a5f; border-radius:9999px; height:8px; width:56%;"></div>
+      <div id="progress-bar" style="background:#1e3a5f; border-radius:9999px; height:8px; width:0%;"></div>
     </div>
   </div>
+  <script>
+  document.getElementById('progress-bar').style.width = '{{ progress_persen }}%';
+  </script>
+  {% endif %}
 
   <!-- Tier List -->
   <div class="mt-4 flex flex-col gap-4">
+    {% for tier in tiers %}
 
-    <!-- Blue -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <div class="flex items-center gap-3 mb-3">
+    {% if tier.id_tier == id_tier_saya %}
+    <!-- Tier Aktif -->
+    <div style="
+      background:{% if tier.nama == 'Classic' or tier.nama == 'Blue' %}#eff6ff{% elif tier.nama == 'Silver' %}#f9fafb{% elif tier.nama == 'Gold' %}#fefce8{% else %}#111827{% endif %};
+      border-radius:0.75rem;
+      border:2px solid {% if tier.nama == 'Classic' or tier.nama == 'Blue' %}#3b82f6{% elif tier.nama == 'Silver' %}#6b7280{% elif tier.nama == 'Gold' %}#ca8a04{% else %}#374151{% endif %};
+      padding:1.25rem;">
+      <div class="flex items-center gap-3">
+        {% if tier.nama == 'Classic' or tier.nama == 'Blue' %}
         <div style="background:#dbeafe; border-radius:0.75rem; padding:0.6rem;">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#3b82f6" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
-        <div>
-          <p class="font-bold text-gray-900">Blue</p>
-          <p class="text-xs text-gray-500">Min. 0 penerbangan · Min. 0 miles</p>
-        </div>
-      </div>
-      <p class="text-sm font-semibold text-gray-700 mb-2">Keuntungan:</p>
-      <ul class="flex flex-col gap-1">
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Akumulasi miles dasar
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Akses penawaran khusus member
-        </li>
-      </ul>
-    </div>
-
-    <!-- Silver -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <div class="flex items-center gap-3 mb-3">
+        {% elif tier.nama == 'Silver' %}
         <div style="background:#f3f4f6; border-radius:0.75rem; padding:0.6rem;">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#6b7280" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
-        <div>
-          <p class="font-bold text-gray-900">Silver</p>
-          <p class="text-xs text-gray-500">Min. 10 penerbangan · Min. 15,000 miles</p>
-        </div>
-      </div>
-      <p class="text-sm font-semibold text-gray-700 mb-2">Keuntungan:</p>
-      <ul class="flex flex-col gap-1">
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Bonus miles 25%
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Priority check-in
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Akses lounge partner
-        </li>
-      </ul>
-    </div>
-
-    <!-- Gold (Tier Aktif - Highlighted) -->
-    <div style="background:#fefce8; border-radius:0.75rem; border:2px solid #ca8a04; padding:1.25rem;">
-      <div class="flex items-center gap-3 mb-3">
+        {% elif tier.nama == 'Gold' %}
         <div style="background:#fef9c3; border-radius:0.75rem; padding:0.6rem;">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#ca8a04" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
-        <div class="flex items-center gap-2">
-          <div>
-            <div class="flex items-center gap-2">
-              <p class="font-bold text-gray-900">Gold</p>
-              <span style="background:#00c3ff; color:white; font-size:0.7rem; font-weight:700; padding:0.15rem 0.6rem; border-radius:9999px;">Tier Anda</span>
-            </div>
-            <p class="text-xs text-gray-500">Min. 25 penerbangan · Min. 40,000 miles</p>
+        {% elif tier.nama == 'Platinum' %}
+        <div style="background:#374151; border-radius:0.75rem; padding:0.6rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#e5e7eb" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        {% else %}
+        <div style="background:#f3f4f6; border-radius:0.75rem; padding:0.6rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#6b7280" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        {% endif %}
+        <div>
+          <div class="flex items-center gap-2">
+            <p class="font-bold {% if tier.nama == 'Platinum' %}text-white{% else %}text-gray-900{% endif %}">{{ tier.nama }}</p>
+            <span style="background:#00c3ff; color:white; font-size:0.7rem; font-weight:700; padding:0.15rem 0.6rem; border-radius:9999px;">Tier Anda</span>
           </div>
+          <p class="text-xs {% if tier.nama == 'Platinum' %}text-gray-300{% else %}text-gray-500{% endif %}">
+            Min. {{ tier.minimal_frekuensi_terbang }} penerbangan · Min. {{ tier.minimal_tier_miles|floatformat:0 }} miles
+          </p>
         </div>
       </div>
-      <p class="text-sm font-semibold text-gray-700 mb-2">Keuntungan:</p>
-      <ul class="flex flex-col gap-1">
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Bonus miles 50%
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Priority boarding
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Akses lounge premium
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Extra bagasi 10kg
-        </li>
-      </ul>
     </div>
 
-    <!-- Platinum -->
+    {% else %}
+    <!-- Tier Biasa -->
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <div class="flex items-center gap-3 mb-3">
+      <div class="flex items-center gap-3">
+        {% if tier.nama == 'Classic' or tier.nama == 'Blue' %}
+        <div style="background:#dbeafe; border-radius:0.75rem; padding:0.6rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#3b82f6" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        {% elif tier.nama == 'Silver' %}
+        <div style="background:#f3f4f6; border-radius:0.75rem; padding:0.6rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#6b7280" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        {% elif tier.nama == 'Gold' %}
+        <div style="background:#fef9c3; border-radius:0.75rem; padding:0.6rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#ca8a04" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        {% elif tier.nama == 'Platinum' %}
         <div style="background:#1f2937; border-radius:0.75rem; padding:0.6rem;">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#e5e7eb" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
+        {% else %}
+        <div style="background:#f3f4f6; border-radius:0.75rem; padding:0.6rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#6b7280" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        {% endif %}
         <div>
-          <p class="font-bold text-gray-900">Platinum</p>
-          <p class="text-xs text-gray-500">Min. 50 penerbangan · Min. 80,000 miles</p>
+          <p class="font-bold text-gray-900">{{ tier.nama }}</p>
+          <p class="text-xs text-gray-500">
+            Min. {{ tier.minimal_frekuensi_terbang }} penerbangan · Min. {{ tier.minimal_tier_miles|floatformat:0 }} miles
+          </p>
         </div>
       </div>
-      <p class="text-sm font-semibold text-gray-700 mb-2">Keuntungan:</p>
-      <ul class="flex flex-col gap-1">
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Bonus miles 100%
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Upgrade gratis (subject to availability)
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Akses lounge first class
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Extra bagasi 20kg
-        </li>
-        <li class="flex items-center gap-2 text-sm text-gray-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Dedicated hotline
-        </li>
-      </ul>
     </div>
+    {% endif %}
 
+    {% empty %}
+    <div class="text-center text-gray-400 py-10">Tidak ada data tier.</div>
+    {% endfor %}
   </div>
+
 </div>
 {% endblock content %}
