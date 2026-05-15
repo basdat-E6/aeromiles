@@ -1,26 +1,24 @@
 import datetime
-from pyexpat.errors import messages
+from django.contrib import messages  
 import re
 from django.shortcuts import render, redirect
 from django.conf import settings
-
+import psycopg2
+import os
 
 def claim_miles(request):
     user_email = request.session.get("user_email")
     if not user_email:
         return redirect("login_view")
 
-    # Cek apakah user adalah staf berdasarkan session role
     is_staff = request.session.get("role") == "staf"
-
     status_filter = request.GET.get("status", "semua")
     context = {
         "current_status": status_filter,
         "claims": [],
-        "is_staff": is_staff,  # Kirim variabel ini ke template HTML
+        "is_staff": is_staff,
     }
 
-    # LOGIKA POST: Hanya Member yang boleh bikin klaim baru
     if request.method == "POST" and not is_staff:
         maskapai_form = request.POST.get("maskapai")
         kelas_form = request.POST.get("kelas")
@@ -32,29 +30,41 @@ def claim_miles(request):
         nomor_tiket_baru = request.POST.get("nomor_tiket")
         waktu_sekarang = datetime.datetime.now().isoformat()
 
-        data_klaim_baru = {
-            "email_member": user_email,
-            "nomor_tiket": nomor_tiket_baru,
-            "maskapai": maskapai_form,
-            "kelas_kabin": kelas_form,
-            "bandara_asal": asal_form,
-            "bandara_tujuan": tujuan_form,
-            "tanggal_penerbangan": tanggal_form,
-            "flight_number": flight_no_form,
-            "pnr": pnr_form,
-            "timestamp": waktu_sekarang,
-            "status_penerimaan": "Menunggu",
-        }
-
+        conn = None
+        cur = None
         try:
-            settings.SUPABASE_CLIENT.table("claim_missing_miles").insert(
-                data_klaim_baru
-            ).execute()
+            conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO claim_missing_miles 
+                (email_member, nomor_tiket, maskapai, kelas_kabin, bandara_asal, 
+                bandara_tujuan, tanggal_penerbangan, flight_number, pnr, timestamp, status_penerimaan)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                user_email, nomor_tiket_baru, maskapai_form, kelas_form,
+                asal_form, tujuan_form, tanggal_form, flight_no_form,
+                pnr_form, waktu_sekarang, "Menunggu"
+            ))
+            conn.commit()
+            cur.close()
+            conn.close()
             return redirect("miles:claim_miles")
-        except Exception as e:
-            print(f"Gagal menyimpan klaim: {e}")
 
-    # LOGIKA GET: Fetch data untuk render halaman
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
+            error_str = str(e)
+            if "sudah pernah diajukan sebelumnya" in error_str:
+                match = re.search(r'ERROR: Klaim untuk penerbangan.*?sebelumnya\.', error_str)
+                context["error_message"] = match.group(0) if match else "Klaim ini sudah pernah diajukan sebelumnya."
+            else:
+                context["error_message"] = "Gagal menyimpan klaim."
+                print(f"Error: {e}")
+
     try:
         maskapai_res = settings.SUPABASE_CLIENT.table("maskapai").select("*").execute()
         if maskapai_res.data:
@@ -64,14 +74,9 @@ def claim_miles(request):
         if bandara_res.data:
             context["daftar_bandara"] = bandara_res.data
 
-        # Beda query untuk Staf dan Member
         query = settings.SUPABASE_CLIENT.table("claim_missing_miles").select("*")
-
-        # Jika bukan staf, filter HANYA data miliknya
         if not is_staff:
             query = query.eq("email_member", user_email)
-
-        # Filter berdasarkan status
         if status_filter != "semua":
             query = query.eq("status_penerimaan", status_filter.capitalize())
 
@@ -79,28 +84,17 @@ def claim_miles(request):
         if klaim_res.data:
             klaim_data = klaim_res.data
             klaim_data.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-
             for claim in klaim_data:
                 claim["no_klaim"] = f"CLM-{str(claim['id']).zfill(3)}"
-                claim["rute_gabungan"] = (
-                    f"{claim['bandara_asal']} → {claim['bandara_tujuan']}"
-                )
-                claim["tanggal_pengajuan_fmt"] = (
-                    claim["timestamp"][:10] if claim.get("timestamp") else "-"
-                )
-
-                # Ambil nama depan dari email untuk ditampilkan ke staf
+                claim["rute_gabungan"] = f"{claim['bandara_asal']} → {claim['bandara_tujuan']}"
+                claim["tanggal_pengajuan_fmt"] = claim["timestamp"][:10] if claim.get("timestamp") else "-"
                 claim["member_name"] = claim["email_member"].split("@")[0]
-
             context["claims"] = klaim_data
 
     except Exception as e:
         print(f"Error fetching claim miles data: {e}")
 
     return render(request, "miles/claim_miles.html", context)
-
-
-# --- FUNGSI EXISTING UNTUK MEMBER (Edit & Delete) ---
 
 
 def edit_claim(request):
@@ -119,14 +113,10 @@ def edit_claim(request):
             pnr = pnr.upper()
 
         updated_data = {
-            "maskapai": maskapai,
-            "kelas_kabin": kelas,
-            "bandara_asal": asal,
-            "bandara_tujuan": tujuan,
-            "tanggal_penerbangan": tanggal,
-            "flight_number": flight_no,
-            "pnr": pnr,
-            "nomor_tiket": nomor_tiket_baru,
+            "maskapai": maskapai, "kelas_kabin": kelas,
+            "bandara_asal": asal, "bandara_tujuan": tujuan,
+            "tanggal_penerbangan": tanggal, "flight_number": flight_no,
+            "pnr": pnr, "nomor_tiket": nomor_tiket_baru,
         }
 
         try:
@@ -152,27 +142,52 @@ def delete_claim(request):
     return redirect("miles:claim_miles")
 
 
-# --- FUNGSI BARU KHUSUS STAF (Approve & Reject) ---
-
-
 def approve_claim(request, claim_id):
-    # Proteksi: Pastikan hanya staf yang bisa akses url ini
     if request.session.get("role") != "staf":
         return redirect("miles:claim_miles")
 
     if request.method == "POST":
+        conn = None
+        cur = None
         try:
-            settings.SUPABASE_CLIENT.table("claim_missing_miles").update(
-                {"status_penerimaan": "Disetujui"}
-            ).eq("id", claim_id).execute()
+            conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+            cur = conn.cursor()
+
+            cur.execute("SELECT email_member FROM claim_missing_miles WHERE id = %s", (claim_id,))
+            row = cur.fetchone()
+            if not row:
+                return redirect("miles:claim_miles")
+            email_member = row[0]
+
+            cur.execute("""
+                UPDATE claim_missing_miles 
+                SET status_penerimaan = 'Disetujui'
+                WHERE id = %s
+            """, (claim_id,))
+
+            cur.execute("""
+                UPDATE member
+                SET total_miles = total_miles + 1000,
+                    award_miles = award_miles + 1000
+                WHERE email = %s
+            """, (email_member,))
+
+            conn.commit()
+
         except Exception as e:
+            if conn:
+                conn.rollback()
             print(f"Gagal setujui klaim: {e}")
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
 
     return redirect("miles:claim_miles")
 
 
 def reject_claim(request, claim_id):
-    # Proteksi: Pastikan hanya staf yang bisa akses url ini
     if request.session.get("role") != "staf":
         return redirect("miles:claim_miles")
 
@@ -185,6 +200,7 @@ def reject_claim(request, claim_id):
             print(f"Gagal tolak klaim: {e}")
 
     return redirect("miles:claim_miles")
+
 
 def transfer_miles(request):
     user_email = request.session.get("user_email")
@@ -222,9 +238,7 @@ def transfer_miles(request):
                 "p_jumlah": jumlah,
                 "p_catatan": catatan
             }).execute()
-
-            pesan_sukses_dari_sql = rpc_res.data
-            messages.success(request, pesan_sukses_dari_sql)
+            messages.success(request, rpc_res.data)
             
         except Exception as e:
             error_message = str(e)
@@ -243,67 +257,37 @@ def transfer_miles(request):
     context = {"transfers": [], "award_miles": 0}
 
     try:
-        member_res = (
-            settings.SUPABASE_CLIENT.table("member")
-            .select("award_miles")
-            .eq("email", user_email)
-            .single()
-            .execute()
-        )
+        member_res = settings.SUPABASE_CLIENT.table("member").select("award_miles").eq("email", user_email).single().execute()
         if member_res.data:
             context["award_miles"] = member_res.data.get("award_miles", 0)
     except Exception as e:
         print(f"Gagal ambil award miles: {e}")
 
     try:
-        kirim_res = (
-            settings.SUPABASE_CLIENT.table("transfer")
-            .select("*")
-            .eq("email_member_1", user_email)
-            .execute()
-        )
-        terima_res = (
-            settings.SUPABASE_CLIENT.table("transfer")
-            .select("*")
-            .eq("email_member_2", user_email)
-            .execute()
-        )
+        kirim_res = settings.SUPABASE_CLIENT.table("transfer").select("*").eq("email_member_1", user_email).execute()
+        terima_res = settings.SUPABASE_CLIENT.table("transfer").select("*").eq("email_member_2", user_email).execute()
 
         transfers = []
-
         for t in kirim_res.data or []:
-            transfers.append(
-                {
-                    "email_member": t["email_member_2"],
-                    "nama_member": t["email_member_2"].split("@")[0],
-                    "jumlah_miles": t["jumlah"],
-                    "catatan": t.get("catatan"),
-                    "tipe": "Kirim",
-                    "waktu_fmt": (
-                        t["timestamp"][:16].replace("T", " ")
-                        if t.get("timestamp")
-                        else "-"
-                    ),
-                    "timestamp": t.get("timestamp", ""),
-                }
-            )
-
+            transfers.append({
+                "email_member": t["email_member_2"],
+                "nama_member": t["email_member_2"].split("@")[0],
+                "jumlah_miles": t["jumlah"],
+                "catatan": t.get("catatan"),
+                "tipe": "Kirim",
+                "waktu_fmt": t["timestamp"][:16].replace("T", " ") if t.get("timestamp") else "-",
+                "timestamp": t.get("timestamp", ""),
+            })
         for t in terima_res.data or []:
-            transfers.append(
-                {
-                    "email_member": t["email_member_1"],
-                    "nama_member": t["email_member_1"].split("@")[0],
-                    "jumlah_miles": t["jumlah"],
-                    "catatan": t.get("catatan"),
-                    "tipe": "Terima",
-                    "waktu_fmt": (
-                        t["timestamp"][:16].replace("T", " ")
-                        if t.get("timestamp")
-                        else "-"
-                    ),
-                    "timestamp": t.get("timestamp", ""),
-                }
-            )
+            transfers.append({
+                "email_member": t["email_member_1"],
+                "nama_member": t["email_member_1"].split("@")[0],
+                "jumlah_miles": t["jumlah"],
+                "catatan": t.get("catatan"),
+                "tipe": "Terima",
+                "waktu_fmt": t["timestamp"][:16].replace("T", " ") if t.get("timestamp") else "-",
+                "timestamp": t.get("timestamp", ""),
+            })
 
         transfers.sort(key=lambda x: x["timestamp"], reverse=True)
         context["transfers"] = transfers
