@@ -82,14 +82,25 @@
                         {% if request.session.role == 'staf' %}
                             {% if claim.status_penerimaan == 'Menunggu' %}
                                 <button type="button" 
-                                    onclick="openApproveModal('{% url 'miles:approve_claim' claim.id %}', '{{ claim.no_klaim }}', '{{ claim.email_member }}', '{{ claim.rute_gabungan }}', '{{ claim.kelas_kabin }}')"
+                                    data-url="{% url 'miles:approve_claim' claim.id %}"
+                                    data-no-klaim="{{ claim.no_klaim }}"
+                                    data-member="{{ claim.email_member }}"
+                                    data-rute="{{ claim.rute_gabungan }}"
+                                    data-kelas="{{ claim.kelas_kabin }}"
+                                    onclick="openApproveModal(this.dataset.url, this.dataset.noKlaim, this.dataset.member, this.dataset.rute, this.dataset.kelas)"
                                     class="text-green-600 hover:text-green-800 bg-green-100 hover:bg-green-200 p-2 rounded-full transition" title="Setujui">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </button>
+
                                 <button type="button" 
-                                    onclick="openRejectModal('{% url 'miles:reject_claim' claim.id %}', '{{ claim.no_klaim }}', '{{ claim.email_member }}', '{{ claim.rute_gabungan }}', '{{ claim.kelas_kabin }}')"
+                                    data-url="{% url 'miles:reject_claim' claim.id %}"
+                                    data-no-klaim="{{ claim.no_klaim }}"
+                                    data-member="{{ claim.email_member }}"
+                                    data-rute="{{ claim.rute_gabungan }}"
+                                    data-kelas="{{ claim.kelas_kabin }}"
+                                    onclick="openRejectModal(this.dataset.url, this.dataset.noKlaim, this.dataset.member, this.dataset.rute, this.dataset.kelas)"
                                     class="text-red-600 hover:text-red-800 bg-red-100 hover:bg-red-200 p-2 rounded-full transition" title="Tolak">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
