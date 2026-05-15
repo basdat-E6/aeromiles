@@ -5,6 +5,7 @@ import datetime
 from datetime import date
 import psycopg2
 import psycopg2.extras
+from psycopg2 import errors
 
 
 def _get_conn():
@@ -210,53 +211,38 @@ def katalog(request):
             return redirect("rewards:katalog")
 
         kode_hadiah = request.POST.get("kode_hadiah")
+        
         try:
             with _get_conn() as conn:
                 with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                    cur.execute(
-                        "SELECT miles, nama, valid_start_date, program_end FROM hadiah WHERE kode_hadiah=%s",
-                        (kode_hadiah,),
-                    )
+                
+                    cur.execute("SELECT nama, miles FROM hadiah WHERE kode_hadiah=%s", (kode_hadiah,))
                     hadiah_row = cur.fetchone()
 
                     if not hadiah_row:
                         messages.error(request, "Hadiah tidak ditemukan.")
                         return redirect("rewards:katalog")
 
-                    hari_ini = date.today()
-                    valid_start = date.fromisoformat(str(hadiah_row["valid_start_date"]))
-                    program_end = date.fromisoformat(str(hadiah_row["program_end"]))
-
-                    if not (valid_start <= hari_ini <= program_end):
-                        messages.error(request, f"Hadiah \"{hadiah_row['nama']}\" tidak tersedia pada periode ini.")
-                        return redirect("rewards:katalog")
-
-                    harga_miles = hadiah_row["miles"]
-
-                    cur.execute("SELECT award_miles FROM member WHERE email=%s", (user_email,))
-                    member_row = cur.fetchone()
-                    saldo_sekarang = member_row.get("award_miles", 0) if member_row else 0
-
-                    if saldo_sekarang < harga_miles:
-                        messages.error(request, f"Saldo award miles tidak mencukupi. Dibutuhkan {harga_miles} miles, saldo Anda: {saldo_sekarang} miles.")
-                        return redirect("rewards:katalog")
-
-                    waktu_sekarang = datetime.datetime.now().isoformat()
+                    waktu_sekarang = datetime.datetime.now()
                     cur.execute(
                         "INSERT INTO redeem (email_member, kode_hadiah, timestamp) VALUES (%s, %s, %s)",
                         (user_email, kode_hadiah, waktu_sekarang),
                     )
-                    cur.execute(
-                        "UPDATE member SET award_miles=%s WHERE email=%s",
-                        (saldo_sekarang - harga_miles, user_email),
-                    )
-
-            messages.success(request, f"SUKSES: Redeem hadiah \"{hadiah_row['nama']}\" berhasil. Award miles Anda berkurang {harga_miles} miles.")
+                    
+            messages.success(
+                request, 
+                f"SUKSES: Redeem hadiah \"{hadiah_row['nama']}\" berhasil. Award miles Anda berkurang {hadiah_row['miles']} miles."
+            )
             return redirect("rewards:katalog")
 
+        except errors.RaiseException as e:
+            pesan_error = e.diag.message_primary if e.diag else str(e).split('\n')[0]
+            messages.error(request, pesan_error)
+            return redirect("rewards:katalog")
+            
         except Exception as e:
             print(f"Error saat redeem: {e}")
-            messages.error(request, "Terjadi kesalahan saat memproses penukaran.")
+            messages.error(request, "Terjadi kesalahan sistem saat memproses penukaran.")
             return redirect("rewards:katalog")
 
     context = {"award_miles": 0, "hadiah_list": [], "riwayat_redeem": []}
