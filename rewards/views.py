@@ -353,13 +353,6 @@ def beli_package(request):
                         "SELECT award_miles, total_miles FROM member WHERE email=%s",
                         (user_email,),
                     )
-                    member_row = cur.fetchone()
-                    award_miles_baru = (member_row.get("award_miles") or 0) + jumlah_miles
-                    total_miles_baru = (member_row.get("total_miles") or 0) + jumlah_miles
-                    cur.execute(
-                        "UPDATE member SET award_miles=%s, total_miles=%s WHERE email=%s",
-                        (award_miles_baru, total_miles_baru, user_email),
-                    )
 
             messages.success(request, f"SUKSES: Pembelian package berhasil. Award miles dan total miles Anda bertambah {jumlah_miles:,} miles.")
 

@@ -3,6 +3,7 @@ from django.contrib import messages
 import re
 import psycopg2
 import psycopg2.extras
+from psycopg2 import errors
 from django.shortcuts import render, redirect
 from django.conf import settings
 
@@ -298,15 +299,12 @@ def transfer_miles(request):
             if res:
                 messages.success(request, res[0])
 
-        except Exception as e:
-            if conn: conn.rollback()
-            error_message = str(e)
-            if "Saldo award miles tidak mencukupi" in error_message:
-                match = re.search(r'(ERROR:\s*Saldo award miles tidak mencukupi.*)', error_message)
-                messages.error(request, match.group(1) if match else "ERROR: Saldo award miles tidak mencukupi untuk melakukan transfer ini.")
-            else:
-                print(f"Gagal transfer miles: {e}")
-                messages.error(request, "Terjadi kesalahan sistem saat memproses transfer.")
+        except errors.RaiseException as e:
+            if conn: conn.rollback() 
+            pesan_bersih = str(e.diag.message_primary) if e.diag else str(e).split('\n')[0]
+            messages.error(request, pesan_bersih)
+            return redirect('miles:transfer_miles')
+        
         finally:
             if cur: cur.close()
             if conn: conn.close()

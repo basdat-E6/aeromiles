@@ -16,7 +16,21 @@
             </button>
         </div>
 
-        <!-- Tabel Riwayat Transfer -->
+         {% if messages %}
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <div class="bg-green-100 text-green-700 p-3 rounded-lg mb-4 text-xs font-bold text-center">
+                        {{ message }}
+                    </div>
+                    
+                {% elif message.tags == 'error' %}
+                    <div class="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-xs font-bold text-center">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
             <div class="px-6 py-4 border-b border-gray-100">
                 <h3 class="text-base font-bold text-gray-800">Riwayat Transfer</h3>
