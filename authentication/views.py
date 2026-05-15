@@ -9,14 +9,7 @@ from django.conf import settings
 
 def get_db_connection():
     """Membuka koneksi langsung ke PostgreSQL menggunakan kredensial dari settings.py"""
-    db_settings = settings.DATABASES['default']
-    return psycopg2.connect(
-        dbname=db_settings['NAME'],
-        user=db_settings['USER'],
-        password=db_settings['PASSWORD'],
-        host=db_settings['HOST'],
-        port=db_settings['PORT']
-    )
+    return psycopg2.connect(settings.DATABASE_URL)
 
 def register(request):
     if request.method == "POST":

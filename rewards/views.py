@@ -1,7 +1,6 @@
 from django.contrib import messages  
 from django.shortcuts import render, redirect, get_object_or_404
 from django.conf import settings
-from .models import Hadiah, Penyedia, Mitra
 import datetime
 from datetime import date
 
